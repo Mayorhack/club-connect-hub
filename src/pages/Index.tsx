@@ -100,6 +100,12 @@ function useReveal<T extends HTMLElement = HTMLElement>() {
     const el = ref.current;
     if (!el) return;
     const show = () => el.classList.add("visible");
+    // Immediately visible on load (e.g. after refresh)
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight) {
+      show();
+      return;
+    }
     const obs = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) {
@@ -124,6 +130,12 @@ function useRevealContainer() {
       container
         .querySelectorAll<HTMLElement>(".reveal")
         .forEach((el) => el.classList.add("visible"));
+    // Immediately visible on load (e.g. after refresh)
+    const rect = container.getBoundingClientRect();
+    if (rect.top < window.innerHeight) {
+      showAll();
+      return;
+    }
     const obs = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) {
@@ -489,8 +501,6 @@ const Index = () => {
 
   const clubMap = Object.fromEntries(clubs.map((c) => [c.id, c]));
   const featuresContainerRef = useRevealContainer();
-  const clubsHeadingRef = useReveal<HTMLDivElement>();
-  const clubsContainerRef = useRevealContainer();
 
   // "Players to Watch" — spotlight players with the most metadata filled in
   const spotlightPlayers = [...allPlayers]
@@ -580,10 +590,7 @@ const Index = () => {
 
       {/* ── Clubs grid ── */}
       <section id="clubs" className="container py-12">
-        <div
-          ref={clubsHeadingRef}
-          className="flex items-end justify-between mb-8 reveal"
-        >
+        <div className="flex items-end justify-between mb-8 anim-fade-up">
           <div>
             <h2 className="text-2xl font-bold">Registered Clubs</h2>
             <p className="text-sm text-muted-foreground mt-1">
@@ -602,10 +609,7 @@ const Index = () => {
             </p>
           </div>
         ) : (
-          <div
-            ref={clubsContainerRef}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
-          >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {clubs.map((c, i) => {
               const cPlayers = playersByClub(allPlayers, c.id);
               const count = cPlayers.length;
@@ -618,8 +622,8 @@ const Index = () => {
                 <Link
                   key={c.id}
                   to={`/clubs/${c.id}`}
-                  style={{ transitionDelay: `${i * 70}ms` }}
-                  className="group relative flex flex-col rounded-2xl border border-border bg-card overflow-hidden hover:shadow-[var(--shadow-card)] hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 reveal"
+                  style={{ animationDelay: `${i * 70}ms` }}
+                  className="group relative flex flex-col rounded-2xl border border-border bg-card overflow-hidden hover:shadow-[var(--shadow-card)] hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 anim-fade-up"
                 >
                   <div
                     className="h-1.5 w-full"
