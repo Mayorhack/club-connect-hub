@@ -1,72 +1,117 @@
-import { createContext, ReactNode, useContext, useEffect, useState } from "react";
-import { getSession, getUsers, hash, Role, setSession, setUsers, uid, User, seedIfNeeded } from "./storage";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { supabase } from "./supabase";
+import { Role, User } from "./storage";
 
-interface AuthCtx {
+export interface AuthCtx {
   user: User | null;
-  login: (email: string, password: string) => { ok: boolean; error?: string };
-  signup: (email: string, password: string) => { ok: boolean; error?: string };
-  logout: () => void;
-  refresh: () => void;
+  loading: boolean;
+  login: (
+    email: string,
+    password: string,
+  ) => Promise<{ ok: boolean; error?: string; role?: Role }>;
+  signup: (
+    email: string,
+    password: string,
+  ) => Promise<{ ok: boolean; error?: string }>;
+  logout: () => Promise<void>;
 }
 
 const Ctx = createContext<AuthCtx | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const refresh = () => {
-    const s = getSession();
-    if (!s) return setUser(null);
-    const u = getUsers().find((x) => x.id === s.userId) || null;
-    setUser(u);
-  };
+  async function loadProfile(id: string) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, email, role, club_id")
+      .eq("id", id)
+      .single();
+    if (data) {
+      setUser({
+        id: data.id,
+        email: data.email,
+        role: data.role as Role,
+        clubId: data.club_id ?? undefined,
+      });
+    } else {
+      setUser(null);
+    }
+  }
 
   useEffect(() => {
-    seedIfNeeded();
-    refresh();
-    const onStorage = () => refresh();
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    // Check existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadProfile(session.user.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // Listen for auth state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        loadProfile(session.user.id);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login: AuthCtx["login"] = (email, password) => {
-    const users = getUsers();
-    const u = users.find((x) => x.email.toLowerCase() === email.toLowerCase().trim());
-    if (!u) return { ok: false, error: "No account with that email" };
-    if (u.passwordHash !== hash(password)) return { ok: false, error: "Incorrect password" };
-    setSession({ userId: u.id });
-    setUser(u);
+  const login = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) return { ok: false, error: error.message };
+    // Fetch role for immediate redirect
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+    return { ok: true, role: (profile?.role ?? "user") as Role };
+  };
+
+  const signup = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) return { ok: false, error: error.message };
     return { ok: true };
   };
 
-  const signup: AuthCtx["signup"] = (email, password) => {
-    const e = email.toLowerCase().trim();
-    if (!/^\S+@\S+\.\S+$/.test(e)) return { ok: false, error: "Invalid email" };
-    if (password.length < 6) return { ok: false, error: "Password must be 6+ characters" };
-    const users = getUsers();
-    if (users.some((x) => x.email.toLowerCase() === e)) return { ok: false, error: "Email already registered" };
-    const newUser: User = { id: uid(), email: e, passwordHash: hash(password), role: "user" };
-    setUsers([...users, newUser]);
-    setSession({ userId: newUser.id });
-    setUser(newUser);
-    return { ok: true };
-  };
-
-  const logout = () => {
-    setSession(null);
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
   };
 
-  return <Ctx.Provider value={{ user, login, signup, logout, refresh }}>{children}</Ctx.Provider>;
+  const value = useMemo(
+    () => ({ user, loading, login, signup, logout }),
+    [user, loading],
+  );
+
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {
-  const c = useContext(Ctx);
-  if (!c) throw new Error("useAuth must be inside AuthProvider");
-  return c;
+  const ctx = useContext(Ctx);
+  if (!ctx) throw new Error("useAuth must be inside AuthProvider");
+  return ctx;
 }
 
-export function roleHome(role?: Role) {
+export function roleHome(role: Role | undefined) {
   if (role === "super") return "/admin";
   if (role === "club") return "/my-club";
   return "/";

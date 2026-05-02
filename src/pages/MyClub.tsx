@@ -1,16 +1,48 @@
-import { FormEvent, useState, ChangeEvent } from "react";
+import { FormEvent, useState, ChangeEvent, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import { useAuth } from "@/lib/auth";
 import {
-  ALL_POSITIONS, Foot, getClubs, getPlayers, Player, Position, POSITION_NAME, POSITION_GROUP, PositionGroup,
-  setClubs, setPlayers, uid,
+  ALL_POSITIONS,
+  Foot,
+  getClubs,
+  getPlayersByClub,
+  Player,
+  Position,
+  POSITION_NAME,
+  POSITION_GROUP,
+  PositionGroup,
+  createPlayer,
+  deletePlayer,
+  updateClub,
 } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, AlertCircle, CheckCircle2, Footprints, Upload, Ruler, Weight } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Plus,
+  Trash2,
+  AlertCircle,
+  CheckCircle2,
+  Footprints,
+  Upload,
+  Ruler,
+  Weight,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const FEET: Foot[] = ["right", "left", "both"];
@@ -36,34 +68,57 @@ const groupLabel: Record<PositionGroup, string> = {
 };
 
 function initials(name: string) {
-  return name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 }
 
 export default function MyClub() {
   const { user } = useAuth();
-  const [, force] = useState(0);
-  const refresh = () => force((x) => x + 1);
-
-  const club = getClubs().find((c) => c.id === user?.clubId);
-  const players = club
-    ? getPlayers().filter((p) => p.clubId === club.id).sort((a, b) => a.jerseyNumber - b.jerseyNumber)
-    : [];
+  const qc = useQueryClient();
+  const { data: clubs = [] } = useQuery({
+    queryKey: ["clubs"],
+    queryFn: getClubs,
+  });
+  const club = clubs.find((c) => c.id === user?.clubId);
+  const { data: players = [] } = useQuery({
+    queryKey: ["players", user?.clubId],
+    queryFn: () => getPlayersByClub(user?.clubId ?? ""),
+    enabled: !!user?.clubId,
+  });
   const gkCount = players.filter((p) => p.position === "GK").length;
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
   // Club info edit
-  const [editName, setEditName] = useState(club?.name || "");
-  const [editCity, setEditCity] = useState(club?.city || "");
-  const [editYear, setEditYear] = useState<number>(club?.foundedYear || new Date().getFullYear());
-  const [editLogo, setEditLogo] = useState(club?.logoUrl || "");
+  const [editName, setEditName] = useState(club?.name ?? "");
+  const [editCity, setEditCity] = useState(club?.city ?? "");
+  const [editYear, setEditYear] = useState<number>(
+    club?.foundedYear ?? new Date().getFullYear(),
+  );
+  const [editLogo, setEditLogo] = useState(club?.logoUrl ?? "");
+  const [savingClub, setSavingClub] = useState(false);
+
+  useEffect(() => {
+    if (!club) return;
+    setEditName(club.name);
+    setEditCity(club.city);
+    setEditYear(club.foundedYear);
+    setEditLogo(club.logoUrl ?? "");
+  }, [club]);
 
   if (!club) {
     return (
       <Layout>
         <div className="container py-20 text-center">
-          <p className="text-muted-foreground">You're not assigned to a club yet. Ask the super admin to assign you.</p>
+          <p className="text-muted-foreground">
+            You're not assigned to a club yet. Ask the super admin to assign
+            you.
+          </p>
         </div>
       </Layout>
     );
@@ -71,28 +126,45 @@ export default function MyClub() {
 
   const saveClub = (e: FormEvent) => {
     e.preventDefault();
-    setClubs(getClubs().map((c) => c.id === club.id ? { ...c, name: editName.trim(), city: editCity.trim(), foundedYear: editYear, logoUrl: editLogo.trim() || undefined } : c));
-    toast.success("Club updated");
-    refresh();
+    setSavingClub(true);
+    updateClub(club.id, {
+      name: editName.trim(),
+      city: editCity.trim(),
+      foundedYear: editYear,
+      logoUrl: editLogo.trim() || undefined,
+    })
+      .then(() => {
+        toast.success("Club updated");
+        return qc.invalidateQueries({ queryKey: ["clubs"] });
+      })
+      .catch((err: Error) => toast.error(err.message))
+      .finally(() => setSavingClub(false));
   };
 
   const handleImage = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) return toast.error("Image must be under 2MB");
+    if (file.size > 2 * 1024 * 1024)
+      return toast.error("Image must be under 2MB");
     const reader = new FileReader();
-    reader.onload = () => setForm((f) => ({ ...f, photoUrl: String(reader.result) }));
+    reader.onload = () =>
+      setForm((f) => ({
+        ...f,
+        photoUrl: typeof reader.result === "string" ? reader.result : undefined,
+      }));
     reader.readAsDataURL(file);
   };
 
   const addPlayer = (e: FormEvent) => {
     e.preventDefault();
     if (players.length >= 25) return toast.error("Squad limit (25) reached");
-    if (!form.firstName.trim() || !form.lastName.trim()) return toast.error("First and last name required");
-    if (form.jerseyNumber < 1 || form.jerseyNumber > 99) return toast.error("Jersey number must be 1–99");
-    if (players.some((p) => p.jerseyNumber === form.jerseyNumber)) return toast.error(`Jersey #${form.jerseyNumber} already taken`);
-    const p: Player = {
-      id: uid(),
+    if (!form.firstName.trim() || !form.lastName.trim())
+      return toast.error("First and last name required");
+    if (form.jerseyNumber < 1 || form.jerseyNumber > 99)
+      return toast.error("Jersey number must be 1–99");
+    if (players.some((p) => p.jerseyNumber === form.jerseyNumber))
+      return toast.error(`Jersey #${form.jerseyNumber} already taken`);
+    const newPlayer: Omit<Player, "id"> = {
       clubId: club.id,
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
@@ -105,17 +177,21 @@ export default function MyClub() {
       heightCm: form.heightCm ? Number(form.heightCm) : undefined,
       weightKg: form.weightKg ? Number(form.weightKg) : undefined,
     };
-    setPlayers([...getPlayers(), p]);
-    toast.success("Player added");
-    setOpen(false);
-    setForm(emptyForm);
-    refresh();
+    createPlayer(newPlayer)
+      .then(() => {
+        toast.success("Player added");
+        setOpen(false);
+        setForm(emptyForm);
+        return qc.invalidateQueries({ queryKey: ["players", user?.clubId] });
+      })
+      .catch((err: Error) => toast.error(err.message));
   };
 
   const removePlayer = (id: string) => {
     if (!confirm("Remove this player?")) return;
-    setPlayers(getPlayers().filter((p) => p.id !== id));
-    refresh();
+    deletePlayer(id)
+      .then(() => qc.invalidateQueries({ queryKey: ["players", user?.clubId] }))
+      .catch((err: Error) => toast.error(err.message));
   };
 
   const squadFull = players.length >= 25;
@@ -126,22 +202,40 @@ export default function MyClub() {
       <div className="container py-10 space-y-10">
         <header>
           <h1 className="text-3xl font-bold">{club.name}</h1>
-          <p className="text-sm text-muted-foreground">Manage your squad and club info.</p>
+          <p className="text-sm text-muted-foreground">
+            Manage your squad and club info.
+          </p>
         </header>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className={`rounded-xl border p-4 flex items-start gap-3 ${squadFull ? "border-accent/40 bg-accent/10" : "border-border bg-card"}`}>
-            {squadFull ? <AlertCircle className="h-5 w-5 text-accent mt-0.5" /> : <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" />}
+          <div
+            className={`rounded-xl border p-4 flex items-start gap-3 ${squadFull ? "border-accent/40 bg-accent/10" : "border-border bg-card"}`}
+          >
+            {squadFull ? (
+              <AlertCircle className="h-5 w-5 text-accent mt-0.5" />
+            ) : (
+              <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" />
+            )}
             <div>
               <div className="font-semibold">Squad size</div>
-              <div className="text-sm text-muted-foreground">{players.length} of 25 players</div>
+              <div className="text-sm text-muted-foreground">
+                {players.length} of 25 players
+              </div>
             </div>
           </div>
-          <div className={`rounded-xl border p-4 flex items-start gap-3 ${gkOk ? "border-border bg-card" : "border-destructive/40 bg-destructive/5"}`}>
-            {gkOk ? <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" /> : <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />}
+          <div
+            className={`rounded-xl border p-4 flex items-start gap-3 ${gkOk ? "border-border bg-card" : "border-destructive/40 bg-destructive/5"}`}
+          >
+            {gkOk ? (
+              <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" />
+            ) : (
+              <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+            )}
             <div>
               <div className="font-semibold">Goalkeepers</div>
-              <div className="text-sm text-muted-foreground">{gkCount} of minimum 2</div>
+              <div className="text-sm text-muted-foreground">
+                {gkCount} of minimum 2
+              </div>
             </div>
           </div>
         </div>
@@ -151,26 +245,70 @@ export default function MyClub() {
             <h2 className="text-xl font-bold">Squad</h2>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button disabled={squadFull}><Plus className="h-4 w-4 mr-1" /> Add player</Button>
+                <Button disabled={squadFull}>
+                  <Plus className="h-4 w-4 mr-1" /> Add player
+                </Button>
               </DialogTrigger>
               <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                <DialogHeader><DialogTitle>Add player</DialogTitle></DialogHeader>
+                <DialogHeader>
+                  <DialogTitle>Add player</DialogTitle>
+                </DialogHeader>
                 <form onSubmit={addPlayer} className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
-                    <div><Label>First name</Label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} required /></div>
-                    <div><Label>Last name</Label><Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} required /></div>
+                    <div>
+                      <Label>First name</Label>
+                      <Input
+                        value={form.firstName}
+                        onChange={(e) =>
+                          setForm({ ...form, firstName: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Last name</Label>
+                      <Input
+                        value={form.lastName}
+                        onChange={(e) =>
+                          setForm({ ...form, lastName: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label>Player number</Label>
-                      <Input type="number" value={form.jerseyNumber} min={1} max={99} onChange={(e) => setForm({ ...form, jerseyNumber: Number(e.target.value) })} />
+                      <Input
+                        type="number"
+                        value={form.jerseyNumber}
+                        min={1}
+                        max={99}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            jerseyNumber: Number(e.target.value),
+                          })
+                        }
+                      />
                     </div>
                     <div>
                       <Label>Position</Label>
-                      <Select value={form.position} onValueChange={(v) => setForm({ ...form, position: v as Position })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      <Select
+                        value={form.position}
+                        onValueChange={(v) =>
+                          setForm({ ...form, position: v as Position })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent className="max-h-72">
-                          {ALL_POSITIONS.map((p) => <SelectItem key={p} value={p}>{POSITION_NAME[p]} ({p})</SelectItem>)}
+                          {ALL_POSITIONS.map((p) => (
+                            <SelectItem key={p} value={p}>
+                              {POSITION_NAME[p]} ({p})
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -178,23 +316,68 @@ export default function MyClub() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label>Height (cm)</Label>
-                      <Input type="number" min={100} max={230} value={form.heightCm} onChange={(e) => setForm({ ...form, heightCm: e.target.value })} placeholder="e.g. 180" />
+                      <Input
+                        type="number"
+                        min={100}
+                        max={230}
+                        value={form.heightCm}
+                        onChange={(e) =>
+                          setForm({ ...form, heightCm: e.target.value })
+                        }
+                        placeholder="e.g. 180"
+                      />
                     </div>
                     <div>
                       <Label>Weight (kg)</Label>
-                      <Input type="number" min={30} max={150} value={form.weightKg} onChange={(e) => setForm({ ...form, weightKg: e.target.value })} placeholder="e.g. 75" />
+                      <Input
+                        type="number"
+                        min={30}
+                        max={150}
+                        value={form.weightKg}
+                        onChange={(e) =>
+                          setForm({ ...form, weightKg: e.target.value })
+                        }
+                        placeholder="e.g. 75"
+                      />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><Label>Map group</Label><Input value={form.mapGroup} onChange={(e) => setForm({ ...form, mapGroup: e.target.value })} /></div>
-                    <div><Label>Church unit</Label><Input value={form.churchUnit} onChange={(e) => setForm({ ...form, churchUnit: e.target.value })} /></div>
+                    <div>
+                      <Label>Map group</Label>
+                      <Input
+                        value={form.mapGroup}
+                        onChange={(e) =>
+                          setForm({ ...form, mapGroup: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label>Church unit</Label>
+                      <Input
+                        value={form.churchUnit}
+                        onChange={(e) =>
+                          setForm({ ...form, churchUnit: e.target.value })
+                        }
+                      />
+                    </div>
                   </div>
                   <div>
                     <Label>Preferred foot</Label>
-                    <Select value={form.preferredFoot} onValueChange={(v) => setForm({ ...form, preferredFoot: v as Foot })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select
+                      value={form.preferredFoot}
+                      onValueChange={(v) =>
+                        setForm({ ...form, preferredFoot: v as Foot })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
-                        {FEET.map((f) => <SelectItem key={f} value={f} className="capitalize">{f}</SelectItem>)}
+                        {FEET.map((f) => (
+                          <SelectItem key={f} value={f} className="capitalize">
+                            {f}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -202,12 +385,27 @@ export default function MyClub() {
                     <Label>Player photo</Label>
                     <div className="flex items-center gap-3 mt-1">
                       <div className="h-14 w-14 rounded-full bg-secondary overflow-hidden flex items-center justify-center text-xs text-muted-foreground border border-border">
-                        {form.photoUrl ? <img src={form.photoUrl} alt="preview" className="h-full w-full object-cover" /> : <Upload className="h-5 w-5" />}
+                        {form.photoUrl ? (
+                          <img
+                            src={form.photoUrl}
+                            alt="preview"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <Upload className="h-5 w-5" />
+                        )}
                       </div>
-                      <Input type="file" accept="image/*" onChange={handleImage} className="cursor-pointer" />
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImage}
+                        className="cursor-pointer"
+                      />
                     </div>
                   </div>
-                  <Button type="submit" className="w-full">Add to squad</Button>
+                  <Button type="submit" className="w-full">
+                    Add to squad
+                  </Button>
                 </form>
               </DialogContent>
             </Dialog>
@@ -238,30 +436,70 @@ export default function MyClub() {
                     <div className="flex items-start gap-3">
                       <div className="relative h-12 w-12 shrink-0 rounded-full bg-secondary overflow-hidden flex items-center justify-center text-sm font-semibold text-secondary-foreground">
                         {p.photoUrl ? (
-                          <img src={p.photoUrl} alt={fullName} className="h-full w-full object-cover" />
+                          <img
+                            src={p.photoUrl}
+                            alt={fullName}
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
                           initials(fullName)
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-1.5">
-                          <span className="text-[11px] font-medium tabular-nums text-muted-foreground">#{p.jerseyNumber}</span>
-                          <span className="font-medium leading-tight truncate">{fullName}</span>
+                          <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
+                            #{p.jerseyNumber}
+                          </span>
+                          <span className="font-medium leading-tight truncate">
+                            {fullName}
+                          </span>
                         </div>
                         <div className="mt-0.5 text-xs text-muted-foreground truncate">
-                          {POSITION_NAME[p.position]} <span className="opacity-50">· {groupLabel[group]}</span>
+                          {POSITION_NAME[p.position]}{" "}
+                          <span className="opacity-50">
+                            · {groupLabel[group]}
+                          </span>
                         </div>
                       </div>
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                      {p.heightCm != null && (<span className="inline-flex items-center gap-1"><Ruler className="h-3 w-3" />{p.heightCm} cm</span>)}
-                      {p.weightKg != null && (<span className="inline-flex items-center gap-1"><Weight className="h-3 w-3" />{p.weightKg} kg</span>)}
-                      {p.preferredFoot && (<span className="inline-flex items-center gap-1 capitalize"><Footprints className="h-3 w-3" />{p.preferredFoot}</span>)}
+                      {p.heightCm != null && (
+                        <span className="inline-flex items-center gap-1">
+                          <Ruler className="h-3 w-3" />
+                          {p.heightCm} cm
+                        </span>
+                      )}
+                      {p.weightKg != null && (
+                        <span className="inline-flex items-center gap-1">
+                          <Weight className="h-3 w-3" />
+                          {p.weightKg} kg
+                        </span>
+                      )}
+                      {p.preferredFoot && (
+                        <span className="inline-flex items-center gap-1 capitalize">
+                          <Footprints className="h-3 w-3" />
+                          {p.preferredFoot}
+                        </span>
+                      )}
                     </div>
                     {(p.mapGroup || p.churchUnit) && (
                       <div className="mt-3 pt-3 border-t border-border text-[11px] text-muted-foreground space-y-0.5">
-                        {p.mapGroup && <div><span className="text-foreground/80">Map group:</span> {p.mapGroup}</div>}
-                        {p.churchUnit && <div><span className="text-foreground/80">Church unit:</span> {p.churchUnit}</div>}
+                        {p.mapGroup && (
+                          <div>
+                            <span className="text-foreground/80">
+                              Map group:
+                            </span>{" "}
+                            {p.mapGroup}
+                          </div>
+                        )}
+                        {p.churchUnit && (
+                          <div>
+                            <span className="text-foreground/80">
+                              Church unit:
+                            </span>{" "}
+                            {p.churchUnit}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -273,12 +511,45 @@ export default function MyClub() {
 
         <section>
           <h2 className="text-xl font-bold mb-4">Club info</h2>
-          <form onSubmit={saveClub} className="grid gap-4 sm:grid-cols-2 rounded-xl border border-border bg-card p-6">
-            <div><Label>Name</Label><Input value={editName} onChange={(e) => setEditName(e.target.value)} /></div>
-            <div><Label>City</Label><Input value={editCity} onChange={(e) => setEditCity(e.target.value)} /></div>
-            <div><Label>Founded year</Label><Input type="number" value={editYear} onChange={(e) => setEditYear(Number(e.target.value))} /></div>
-            <div><Label>Logo URL</Label><Input value={editLogo} onChange={(e) => setEditLogo(e.target.value)} placeholder="https://..." /></div>
-            <div className="sm:col-span-2"><Button type="submit">Save changes</Button></div>
+          <form
+            onSubmit={saveClub}
+            className="grid gap-4 sm:grid-cols-2 rounded-xl border border-border bg-card p-6"
+          >
+            <div>
+              <Label>Name</Label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>City</Label>
+              <Input
+                value={editCity}
+                onChange={(e) => setEditCity(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Founded year</Label>
+              <Input
+                type="number"
+                value={editYear}
+                onChange={(e) => setEditYear(Number(e.target.value))}
+              />
+            </div>
+            <div>
+              <Label>Logo URL</Label>
+              <Input
+                value={editLogo}
+                onChange={(e) => setEditLogo(e.target.value)}
+                placeholder="https://..."
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Button type="submit" disabled={savingClub}>
+                {savingClub ? "Saving…" : "Save changes"}
+              </Button>
+            </div>
           </form>
         </section>
       </div>
