@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/Layout";
@@ -91,6 +91,49 @@ function useSlider(length: number, auto = true) {
     return () => clearInterval(t);
   }, [auto, length, next]);
   return { idx, prev, next, setIdx };
+}
+
+// ── Scroll-reveal hooks ──────────────────────────────────────────────────────
+function useReveal<T extends HTMLElement = HTMLElement>() {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          el.classList.add("visible");
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.12 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return ref;
+}
+
+function useRevealContainer() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const container = ref.current;
+    if (!container) return;
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          container
+            .querySelectorAll<HTMLElement>(".reveal")
+            .forEach((el) => el.classList.add("visible"));
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.05 },
+    );
+    obs.observe(container);
+    return () => obs.disconnect();
+  }, []);
+  return ref;
 }
 
 // ── Player spotlight card ────────────────────────────────────────────────────
@@ -189,21 +232,21 @@ function HeroCarousel({
 
       {/* Content */}
       <div className="relative h-full container flex items-center">
-        <div className="max-w-lg z-10">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium tracking-wide uppercase mb-6 text-white">
+        <div key={idx} className="max-w-lg z-10">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium tracking-wide uppercase mb-6 text-white anim-fade-in">
             <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
             PIE Cup — Season 2026
           </div>
 
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight text-white">
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight text-white anim-fade-up anim-delay-100">
             {slide.title}
           </h1>
 
-          <p className="mt-4 text-base sm:text-lg text-white/90 leading-relaxed">
+          <p className="mt-4 text-base sm:text-lg text-white/90 leading-relaxed anim-fade-up anim-delay-200">
             {slide.desc}
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-wrap gap-3 anim-fade-up anim-delay-300">
             <a
               href={slide.cta1.href}
               className="inline-flex items-center gap-2 rounded-lg bg-white text-black font-semibold px-5 py-2.5 text-sm shadow hover:opacity-90 transition"
@@ -219,7 +262,7 @@ function HeroCarousel({
           </div>
 
           {/* Stats */}
-          <div className="mt-12 hidden sm:flex flex-wrap gap-8">
+          <div className="mt-12 hidden sm:flex flex-wrap gap-8 anim-fade-up anim-delay-500">
             <div>
               <div className="text-3xl font-extrabold text-white">
                 {clubs.length}
@@ -366,6 +409,7 @@ function Slider<T>({
 }>) {
   const pages = Math.ceil(items.length / visibleCount);
   const { idx, prev, next, setIdx } = useSlider(pages);
+  const sectionRef = useReveal<HTMLElement>();
 
   const visible = items.slice(
     idx * visibleCount,
@@ -375,7 +419,7 @@ function Slider<T>({
   if (items.length === 0) return null;
 
   return (
-    <section className="container py-12">
+    <section ref={sectionRef} className="container py-12 reveal">
       <div className="flex items-end justify-between mb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -441,6 +485,9 @@ const Index = () => {
   const totalPlayers = allPlayers.length;
 
   const clubMap = Object.fromEntries(clubs.map((c) => [c.id, c]));
+  const featuresContainerRef = useRevealContainer();
+  const clubsHeadingRef = useReveal<HTMLDivElement>();
+  const clubsContainerRef = useRevealContainer();
 
   // "Players to Watch" — spotlight players with the most metadata filled in
   const spotlightPlayers = [...allPlayers]
@@ -465,9 +512,16 @@ const Index = () => {
       {/* ── Features row ── */}
       <section className="border-b border-border bg-muted/40">
         <div className="container py-10">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {FEATURES.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="flex gap-4">
+          <div
+            ref={featuresContainerRef}
+            className="grid grid-cols-1 sm:grid-cols-3 gap-6"
+          >
+            {FEATURES.map(({ icon: Icon, title, desc }, i) => (
+              <div
+                key={title}
+                className="flex gap-4 reveal"
+                style={{ transitionDelay: `${i * 150}ms` }}
+              >
                 <div
                   className="shrink-0 h-10 w-10 rounded-lg flex items-center justify-center"
                   style={{ background: "var(--gradient-pitch)" }}
@@ -523,7 +577,10 @@ const Index = () => {
 
       {/* ── Clubs grid ── */}
       <section id="clubs" className="container py-12">
-        <div className="flex items-end justify-between mb-8">
+        <div
+          ref={clubsHeadingRef}
+          className="flex items-end justify-between mb-8 reveal"
+        >
           <div>
             <h2 className="text-2xl font-bold">Registered Clubs</h2>
             <p className="text-sm text-muted-foreground mt-1">
@@ -542,8 +599,11 @@ const Index = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {clubs.map((c) => {
+          <div
+            ref={clubsContainerRef}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+          >
+            {clubs.map((c, i) => {
               const cPlayers = playersByClub(allPlayers, c.id);
               const count = cPlayers.length;
               const gkCount = cPlayers.filter(
@@ -555,7 +615,8 @@ const Index = () => {
                 <Link
                   key={c.id}
                   to={`/clubs/${c.id}`}
-                  className="group relative flex flex-col rounded-2xl border border-border bg-card overflow-hidden hover:shadow-[var(--shadow-card)] hover:border-primary/30 transition-all duration-300 hover:-translate-y-1"
+                  style={{ transitionDelay: `${i * 70}ms` }}
+                  className="group relative flex flex-col rounded-2xl border border-border bg-card overflow-hidden hover:shadow-[var(--shadow-card)] hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 reveal"
                 >
                   <div
                     className="h-1.5 w-full"
