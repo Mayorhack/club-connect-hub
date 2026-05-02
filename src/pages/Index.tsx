@@ -99,14 +99,15 @@ function useReveal<T extends HTMLElement = HTMLElement>() {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    const show = () => el.classList.add("visible");
     const obs = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) {
-          el.classList.add("visible");
+          show();
           obs.disconnect();
         }
       },
-      { threshold: 0.12 },
+      { threshold: 0, rootMargin: "0px 0px -40px 0px" },
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -119,16 +120,18 @@ function useRevealContainer() {
   useEffect(() => {
     const container = ref.current;
     if (!container) return;
+    const showAll = () =>
+      container
+        .querySelectorAll<HTMLElement>(".reveal")
+        .forEach((el) => el.classList.add("visible"));
     const obs = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) {
-          container
-            .querySelectorAll<HTMLElement>(".reveal")
-            .forEach((el) => el.classList.add("visible"));
+          showAll();
           obs.disconnect();
         }
       },
-      { threshold: 0.05 },
+      { threshold: 0, rootMargin: "0px 0px -40px 0px" },
     );
     obs.observe(container);
     return () => obs.disconnect();
@@ -486,7 +489,7 @@ const Index = () => {
 
   const clubMap = Object.fromEntries(clubs.map((c) => [c.id, c]));
   const featuresContainerRef = useRevealContainer();
-  const clubsHeadingRef = useReveal();
+  const clubsHeadingRef = useReveal<HTMLDivElement>();
   const clubsContainerRef = useRevealContainer();
 
   // "Players to Watch" — spotlight players with the most metadata filled in
