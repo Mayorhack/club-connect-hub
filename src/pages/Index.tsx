@@ -21,6 +21,48 @@ import {
   Flame,
 } from "lucide-react";
 import { PositionBadge } from "@/components/PositionBadge";
+import lakeside2 from "@/assets/lakeside2.jpeg";
+import lakeside3 from "@/assets/lakeside3.jpeg";
+import lakeside4 from "@/assets/lakeside4.jpeg";
+import lakeside from "@/assets/lakeside.jpg";
+
+const HERO_SLIDES = [
+  {
+    image: lakeside,
+    title: "Welcome to PIE Football Cup",
+    desc: "Celebration Church International's premier football competition. Browse participating clubs, explore full squads, and follow your favourite players.",
+    cta1: { text: "Browse clubs", href: "#clubs" },
+    cta2: { text: "Join as a club admin", href: "/signup" },
+  },
+  {
+    image: lakeside2,
+    title: "Lead your CCI Football Cup team",
+    desc: "Club admins can add players, track positions, and keep everything organized for your PIE Cup squad.",
+    cta1: { text: "View clubs", href: "#clubs" },
+    cta2: { text: "Register your club", href: "/signup" },
+  },
+  {
+    image: lakeside3,
+    title: "Discover CCI's finest talent",
+    desc: "Explore player profiles from across the PIE Cup with detailed stats, positions, and club information.",
+    cta1: { text: "Find players", href: "#clubs" },
+    cta2: { text: "Create account", href: "/signup" },
+  },
+  {
+    image: lakeside4,
+    title: "Compete in the PIE Football Cup",
+    desc: "Register your club for Celebration Church International's flagship football competition and showcase your squad's strength.",
+    cta1: { text: "View clubs", href: "#clubs" },
+    cta2: { text: "Register now", href: "/signup" },
+  },
+  {
+    image: lakeside,
+    title: "Join the PIE Football Community",
+    desc: "Connect with clubs, players, and teams across Celebration Church International's football network.",
+    cta1: { text: "Browse clubs", href: "#clubs" },
+    cta2: { text: "Get started", href: "/signup" },
+  },
+];
 
 const FEATURES = [
   {
@@ -32,11 +74,6 @@ const FEATURES = [
     icon: Star,
     title: "Player Profiles",
     desc: "Detailed cards with jersey numbers, positions, physical stats, and more — all in one place.",
-  },
-  {
-    icon: Users,
-    title: "Role-Based Access",
-    desc: "Super admins create clubs and assign managers. Club admins control their own rosters.",
   },
 ];
 
@@ -108,6 +145,144 @@ function PlayerSpotlight({
       {/* big number watermark */}
       <div className="absolute bottom-2 right-3 text-6xl font-black text-foreground/5 select-none leading-none pointer-events-none">
         {player.jerseyNumber}
+      </div>
+    </div>
+  );
+}
+
+// ── Hero Carousel Component ──────────────────────────────────────────────────
+function HeroCarousel({
+  slides,
+  clubs,
+  totalPlayers,
+}: Readonly<{
+  slides: Array<{
+    image: string;
+    title: string;
+    desc: string;
+    cta1: { text: string; href: string };
+    cta2: { text: string; href: string };
+  }>;
+  clubs: Club[];
+  totalPlayers: number;
+}>) {
+  const { idx, prev, next, setIdx } = useSlider(slides.length);
+  const slide = slides[idx];
+
+  return (
+    <div className="relative w-full h-[500px] sm:h-[600px] overflow-hidden">
+      {/* Background image with overlay */}
+      {slides.map((s, i) => (
+        <div
+          key={`slide-${i}-${s.title}`}
+          className="absolute inset-0 transition-opacity duration-700"
+          style={{ opacity: i === idx ? 1 : 0 }}
+        >
+          <img
+            src={s.image}
+            alt={s.title}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
+        </div>
+      ))}
+
+      {/* Content */}
+      <div className="relative h-full container flex items-center">
+        <div className="max-w-lg z-10">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium tracking-wide uppercase mb-6 text-white">
+            <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+            PIE Cup — Season 2026
+          </div>
+
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight text-white">
+            {slide.title}
+          </h1>
+
+          <p className="mt-4 text-base sm:text-lg text-white/90 leading-relaxed">
+            {slide.desc}
+          </p>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <a
+              href={slide.cta1.href}
+              className="inline-flex items-center gap-2 rounded-lg bg-white text-black font-semibold px-5 py-2.5 text-sm shadow hover:opacity-90 transition"
+            >
+              {slide.cta1.text} <ChevronRight className="h-4 w-4" />
+            </a>
+            <Link
+              to={slide.cta2.href}
+              className="inline-flex items-center gap-2 rounded-lg bg-white/15 border border-white/30 text-white font-medium px-5 py-2.5 text-sm hover:bg-white/25 transition"
+            >
+              {slide.cta2.text}
+            </Link>
+          </div>
+
+          {/* Stats */}
+          <div className="mt-12 hidden sm:flex flex-wrap gap-8">
+            <div>
+              <div className="text-3xl font-extrabold text-white">
+                {clubs.length}
+              </div>
+              <div className="text-xs text-white/70 mt-1 uppercase tracking-wide">
+                Clubs
+              </div>
+            </div>
+            <div className="w-px bg-white/20" />
+            <div>
+              <div className="text-3xl font-extrabold text-white">
+                {totalPlayers}
+              </div>
+              <div className="text-xs text-white/70 mt-1 uppercase tracking-wide">
+                Players
+              </div>
+            </div>
+            <div className="w-px bg-white/20" />
+            <div>
+              <div className="text-3xl font-extrabold text-white">17</div>
+              <div className="text-xs text-white/70 mt-1 uppercase tracking-wide">
+                Positions
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3">
+        {/* Dots */}
+        <div className="flex gap-2">
+          {slides.map((slide) => (
+            <button
+              key={`dot-${slide.title}`}
+              onClick={() => setIdx(slides.indexOf(slide))}
+              className={`h-2 rounded-full transition-all ${
+                slides.indexOf(slide) === idx
+                  ? "w-6 bg-white"
+                  : "w-2 bg-white/40 hover:bg-white/60"
+              }`}
+              aria-label={`Go to ${slide.title} slide`}
+            />
+          ))}
+        </div>
+
+        {/* Arrow buttons */}
+        <div className="ml-2 flex gap-2">
+          <button
+            onClick={prev}
+            className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            onClick={next}
+            className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition"
+            aria-label="Next slide"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -278,106 +453,13 @@ const Index = () => {
 
   return (
     <Layout>
-      {/* ── Hero ── */}
-      <section
-        className="relative overflow-hidden border-b border-border"
-        style={{ background: "var(--gradient-pitch)" }}
-      >
-        {/* decorative blobs */}
-        <div className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/5 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-black/10 blur-2xl" />
-
-        <div className="container relative py-16 sm:py-24">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-            {/* left — text */}
-            <div className="text-primary-foreground">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium tracking-wide uppercase mb-6">
-                <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                PIE Cup — Season 2026
-              </div>
-              <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight">
-                Football clubs,
-                <br />
-                all in one place.
-              </h1>
-              <p className="mt-4 max-w-lg text-base sm:text-lg opacity-85 leading-relaxed">
-                Browse registered clubs, explore full squads, and follow your
-                favourite players — all without signing in.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <a
-                  href="#clubs"
-                  className="inline-flex items-center gap-2 rounded-lg bg-white text-primary font-semibold px-5 py-2.5 text-sm shadow hover:opacity-90 transition"
-                >
-                  Browse clubs <ChevronRight className="h-4 w-4" />
-                </a>
-                <Link
-                  to="/signup"
-                  className="inline-flex items-center gap-2 rounded-lg bg-white/15 border border-white/30 text-white font-medium px-5 py-2.5 text-sm hover:bg-white/25 transition"
-                >
-                  Join as a club admin
-                </Link>
-              </div>
-
-              {/* quick stats */}
-              <div className="mt-10 flex flex-wrap gap-6 sm:gap-10">
-                <div>
-                  <div className="text-3xl font-extrabold">{clubs.length}</div>
-                  <div className="text-xs opacity-70 mt-0.5 uppercase tracking-wide">
-                    Clubs
-                  </div>
-                </div>
-                <div className="w-px bg-white/20 hidden sm:block" />
-                <div>
-                  <div className="text-3xl font-extrabold">{totalPlayers}</div>
-                  <div className="text-xs opacity-70 mt-0.5 uppercase tracking-wide">
-                    Players
-                  </div>
-                </div>
-                <div className="w-px bg-white/20 hidden sm:block" />
-                <div>
-                  <div className="text-3xl font-extrabold">17</div>
-                  <div className="text-xs opacity-70 mt-0.5 uppercase tracking-wide">
-                    Positions tracked
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* right — hero image */}
-            <div className="relative hidden lg:flex items-center justify-center">
-              {/* glow ring */}
-              <div className="absolute h-72 w-72 rounded-full bg-white/10 blur-2xl" />
-              <div className="relative h-80 w-80 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl">
-                <img
-                  src="https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?w=640&q=80&auto=format&fit=crop"
-                  alt="Football action"
-                  className="h-full w-full object-cover object-top scale-110"
-                />
-                {/* overlay gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-              </div>
-              {/* floating badge */}
-              <div className="absolute bottom-8 left-4 bg-white/90 dark:bg-black/70 backdrop-blur rounded-xl px-4 py-2.5 shadow-lg">
-                <div className="text-xs font-bold text-foreground uppercase tracking-wide">
-                  Season 2026
-                </div>
-                <div className="text-[11px] text-muted-foreground mt-0.5">
-                  {clubs.length} active clubs
-                </div>
-              </div>
-              {/* floating stat */}
-              <div className="absolute top-6 right-0 bg-white/90 dark:bg-black/70 backdrop-blur rounded-xl px-4 py-2.5 shadow-lg">
-                <div className="text-xs font-bold text-foreground uppercase tracking-wide">
-                  PIE Cup
-                </div>
-                <div className="text-[11px] text-muted-foreground mt-0.5">
-                  {totalPlayers} players registered
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* ── Hero Carousel ── */}
+      <section className="relative overflow-hidden border-b border-border bg-black">
+        <HeroCarousel
+          slides={HERO_SLIDES}
+          clubs={clubs}
+          totalPlayers={totalPlayers}
+        />
       </section>
 
       {/* ── Features row ── */}
