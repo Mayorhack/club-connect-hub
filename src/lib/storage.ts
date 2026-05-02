@@ -57,7 +57,7 @@ const KEYS = {
   session: "fm.session",
   clubs: "fm.clubs",
   players: "fm.players",
-  seeded: "fm.seeded",
+  seeded: "fm.seeded.v2",
 };
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
