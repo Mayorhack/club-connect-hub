@@ -2,7 +2,7 @@ import { FormEvent, useState, ChangeEvent } from "react";
 import { Layout } from "@/components/Layout";
 import { useAuth } from "@/lib/auth";
 import {
-  ALL_POSITIONS, Foot, getClubs, getPlayers, Player, Position,
+  ALL_POSITIONS, Foot, getClubs, getPlayers, Player, Position, POSITION_NAME, POSITION_GROUP, PositionGroup,
   setClubs, setPlayers, uid,
 } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PositionBadge } from "@/components/PositionBadge";
-import { Plus, Trash2, AlertCircle, CheckCircle2, Footprints, Upload } from "lucide-react";
+import { Plus, Trash2, AlertCircle, CheckCircle2, Footprints, Upload, Ruler, Weight } from "lucide-react";
 import { toast } from "sonner";
 
 const FEET: Foot[] = ["right", "left", "both"];
@@ -25,6 +24,15 @@ const emptyForm = {
   churchUnit: "",
   preferredFoot: "right" as Foot,
   photoUrl: "",
+  heightCm: "" as string,
+  weightKg: "" as string,
+};
+
+const groupLabel: Record<PositionGroup, string> = {
+  GK: "Goalkeeper",
+  DEF: "Defender",
+  MID: "Midfielder",
+  FWD: "Forward",
 };
 
 function initials(name: string) {
@@ -94,6 +102,8 @@ export default function MyClub() {
       churchUnit: form.churchUnit.trim() || undefined,
       preferredFoot: form.preferredFoot,
       photoUrl: form.photoUrl || undefined,
+      heightCm: form.heightCm ? Number(form.heightCm) : undefined,
+      weightKg: form.weightKg ? Number(form.weightKg) : undefined,
     };
     setPlayers([...getPlayers(), p]);
     toast.success("Player added");
@@ -160,9 +170,19 @@ export default function MyClub() {
                       <Select value={form.position} onValueChange={(v) => setForm({ ...form, position: v as Position })}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent className="max-h-72">
-                          {ALL_POSITIONS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                          {ALL_POSITIONS.map((p) => <SelectItem key={p} value={p}>{POSITION_NAME[p]} ({p})</SelectItem>)}
                         </SelectContent>
                       </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Height (cm)</Label>
+                      <Input type="number" min={100} max={230} value={form.heightCm} onChange={(e) => setForm({ ...form, heightCm: e.target.value })} placeholder="e.g. 180" />
+                    </div>
+                    <div>
+                      <Label>Weight (kg)</Label>
+                      <Input type="number" min={30} max={150} value={form.weightKg} onChange={(e) => setForm({ ...form, weightKg: e.target.value })} placeholder="e.g. 75" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -201,10 +221,11 @@ export default function MyClub() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {players.map((p, i) => {
                 const fullName = `${p.firstName} ${p.lastName}`.trim();
+                const group = POSITION_GROUP[p.position];
                 return (
                   <div
                     key={p.id}
-                    className="group relative rounded-xl border border-border bg-card p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card)] animate-fade-in"
+                    className="group relative rounded-xl border border-border bg-card p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[var(--shadow-card)] animate-fade-in"
                     style={{ animationDelay: `${i * 40}ms` }}
                   >
                     <button
@@ -215,32 +236,32 @@ export default function MyClub() {
                       <Trash2 className="h-4 w-4" />
                     </button>
                     <div className="flex items-start gap-3">
-                      <div className="relative h-16 w-16 shrink-0 rounded-full bg-secondary overflow-hidden flex items-center justify-center font-bold text-secondary-foreground transition-transform duration-300 group-hover:scale-105">
+                      <div className="relative h-12 w-12 shrink-0 rounded-full bg-secondary overflow-hidden flex items-center justify-center text-sm font-semibold text-secondary-foreground">
                         {p.photoUrl ? (
                           <img src={p.photoUrl} alt={fullName} className="h-full w-full object-cover" />
                         ) : (
                           initials(fullName)
                         )}
-                        <span className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center border-2 border-card">
-                          {p.jerseyNumber}
-                        </span>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="font-semibold leading-tight truncate">{fullName}</div>
-                        <div className="mt-1 flex items-center gap-2 flex-wrap">
-                          <PositionBadge position={p.position} />
-                          {p.preferredFoot && (
-                            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground capitalize">
-                              <Footprints className="h-3 w-3" /> {p.preferredFoot}
-                            </span>
-                          )}
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-[11px] font-medium tabular-nums text-muted-foreground">#{p.jerseyNumber}</span>
+                          <span className="font-medium leading-tight truncate">{fullName}</span>
+                        </div>
+                        <div className="mt-0.5 text-xs text-muted-foreground truncate">
+                          {POSITION_NAME[p.position]} <span className="opacity-50">· {groupLabel[group]}</span>
                         </div>
                       </div>
                     </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                      {p.heightCm != null && (<span className="inline-flex items-center gap-1"><Ruler className="h-3 w-3" />{p.heightCm} cm</span>)}
+                      {p.weightKg != null && (<span className="inline-flex items-center gap-1"><Weight className="h-3 w-3" />{p.weightKg} kg</span>)}
+                      {p.preferredFoot && (<span className="inline-flex items-center gap-1 capitalize"><Footprints className="h-3 w-3" />{p.preferredFoot}</span>)}
+                    </div>
                     {(p.mapGroup || p.churchUnit) && (
-                      <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground space-y-0.5">
-                        {p.mapGroup && <div><span className="font-medium text-foreground">Map group:</span> {p.mapGroup}</div>}
-                        {p.churchUnit && <div><span className="font-medium text-foreground">Church unit:</span> {p.churchUnit}</div>}
+                      <div className="mt-3 pt-3 border-t border-border text-[11px] text-muted-foreground space-y-0.5">
+                        {p.mapGroup && <div><span className="text-foreground/80">Map group:</span> {p.mapGroup}</div>}
+                        {p.churchUnit && <div><span className="text-foreground/80">Church unit:</span> {p.churchUnit}</div>}
                       </div>
                     )}
                   </div>
