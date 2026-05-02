@@ -170,7 +170,7 @@ function HeroCarousel({
   const slide = slides[idx];
 
   return (
-    <div className="relative w-full h-[500px] sm:h-[600px] overflow-hidden">
+    <div className="relative w-full h-[500px] sm:h-[720px] overflow-hidden">
       {/* Background image with overlay */}
       {slides.map((s, i) => (
         <div
