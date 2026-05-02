@@ -513,7 +513,7 @@ export default function MyClub() {
           <h2 className="text-xl font-bold mb-4">Club info</h2>
           <form
             onSubmit={saveClub}
-            className="grid gap-4 sm:grid-cols-2 rounded-xl border border-border bg-card p-6"
+            className="grid gap-4 sm:grid-cols-2 rounded-xl border border-border bg-card p-5 sm:p-6"
           >
             <div>
               <Label>Name</Label>
@@ -546,7 +546,11 @@ export default function MyClub() {
               />
             </div>
             <div className="sm:col-span-2">
-              <Button type="submit" disabled={savingClub}>
+              <Button
+                type="submit"
+                disabled={savingClub}
+                className="w-full sm:w-auto"
+              >
                 {savingClub ? "Saving…" : "Save changes"}
               </Button>
             </div>

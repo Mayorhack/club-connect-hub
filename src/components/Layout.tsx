@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
-import { Trophy, LogOut, Moon, Sun } from "lucide-react";
+import { Trophy, LogOut, Moon, Sun, Menu, X } from "lucide-react";
 
 export function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
   const { user, logout } = useAuth();
@@ -13,6 +13,12 @@ export function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
   const isHome = pathname === "/";
 
   const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
   useEffect(() => {
     if (!isHome) return;
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -21,7 +27,7 @@ export function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
     return () => window.removeEventListener("scroll", onScroll);
   }, [isHome]);
 
-  const transparent = isHome && !scrolled;
+  const transparent = isHome && !scrolled && !mobileOpen;
 
   function navLinkClass(isActive: boolean) {
     const base = "px-3 py-2 text-sm rounded-md transition-colors";
@@ -29,6 +35,10 @@ export function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
       return `${base} hover:bg-white/10 ${isActive ? "text-white font-semibold" : "text-white/80"}`;
     }
     return `${base} hover:bg-secondary ${isActive ? "text-primary font-semibold" : "text-muted-foreground"}`;
+  }
+
+  function mobileNavLinkClass(isActive: boolean) {
+    return `px-3 py-2.5 text-sm rounded-md transition-colors hover:bg-secondary ${isActive ? "text-primary font-semibold" : "text-foreground"}`;
   }
 
   return (
@@ -53,7 +63,9 @@ export function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
             </span>
             <span className="tracking-tight">PIE Cup</span>
           </Link>
-          <nav className="flex items-center gap-1 sm:gap-2">
+
+          {/* Desktop nav */}
+          <nav className="hidden sm:flex items-center gap-1 sm:gap-2">
             <NavLink
               to="/"
               end
@@ -124,7 +136,96 @@ export function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
               </>
             )}
           </nav>
+
+          {/* Mobile: theme toggle + hamburger */}
+          <div className="flex sm:hidden items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggle}
+              aria-label="Toggle theme"
+              className={transparent ? "text-white hover:bg-white/10" : ""}
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileOpen((o) => !o)}
+              aria-label="Toggle menu"
+              className={transparent ? "text-white hover:bg-white/10" : ""}
+            >
+              {mobileOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
         </div>
+
+        {/* Mobile dropdown menu */}
+        {mobileOpen && (
+          <div className="sm:hidden border-t border-border bg-card/95 backdrop-blur-md">
+            <nav className="container py-3 flex flex-col gap-1">
+              <NavLink
+                to="/"
+                end
+                className={({ isActive }) => mobileNavLinkClass(isActive)}
+              >
+                Clubs
+              </NavLink>
+              {user?.role === "super" && (
+                <NavLink
+                  to="/admin"
+                  className={({ isActive }) => mobileNavLinkClass(isActive)}
+                >
+                  Admin
+                </NavLink>
+              )}
+              {user?.role === "club" && (
+                <NavLink
+                  to="/my-club"
+                  className={({ isActive }) => mobileNavLinkClass(isActive)}
+                >
+                  My Club
+                </NavLink>
+              )}
+              <div className="mt-2 pt-2 border-t border-border flex flex-col gap-1">
+                {user ? (
+                  <>
+                    <div className="px-3 py-1 text-xs text-muted-foreground truncate">
+                      {user.email}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start"
+                      onClick={() => {
+                        void logout().then(() => nav("/"));
+                      }}
+                    >
+                      <LogOut className="h-4 w-4 mr-2" /> Log out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="ghost" size="sm" className="justify-start" asChild>
+                      <Link to="/login">Log in</Link>
+                    </Button>
+                    <Button size="sm" className="justify-start" asChild>
+                      <Link to="/signup">Sign up</Link>
+                    </Button>
+                  </>
+                )}
+              </div>
+            </nav>
+          </div>
+        )}
       </header>
       <main className={`flex-1${isHome ? " -mt-16" : ""}`}>{children}</main>
       <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
@@ -133,3 +234,37 @@ export function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
     </div>
   );
 }
+
+export function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const { user, logout } = useAuth();
+  const { theme, toggle } = useTheme();
+  const nav = useNavigate();
+  const { pathname } = useLocation();
+  const isHome = pathname === "/";
+
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    if (!isHome) return;
+    const onScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isHome]);
+
+  const transparent = isHome && !scrolled;
+
+  function navLinkClass(isActive: boolean) {
+    const base = "px-3 py-2 text-sm rounded-md transition-colors";
+    if (transparent) {
+      return `${base} hover:bg-white/10 ${isActive ? "text-white font-semibold" : "text-white/80"}`;
+    }
+    return `${base} hover:bg-secondary ${isActive ? "text-primary font-semibold" : "text-muted-foreground"}`;
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <header
+        className={`${isHome ? "fixed top-0 left-0 right-0 z-50" : "relative border-b border-border"} transition-all duration-300 ${
+          transparent
+            ? "bg-transparent border-transparent"
+            : "bg-card/95 backdrop-blur-md border-b border-border shadow-sm"

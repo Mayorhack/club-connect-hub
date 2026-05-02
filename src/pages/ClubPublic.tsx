@@ -71,8 +71,8 @@ export default function ClubPublic() {
           >
             <ArrowLeft className="h-4 w-4" /> All clubs
           </Link>
-          <div className="flex items-center gap-5">
-            <div className="h-20 w-20 rounded-xl bg-card/10 backdrop-blur flex items-center justify-center border border-card/20">
+          <div className="flex flex-wrap items-center gap-5">
+            <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl bg-card/10 backdrop-blur flex items-center justify-center border border-card/20 shrink-0">
               {club.logoUrl ? (
                 <img
                   src={club.logoUrl}

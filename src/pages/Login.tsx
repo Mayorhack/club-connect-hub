@@ -26,12 +26,12 @@ export default function Login() {
 
   return (
     <Layout>
-      <div className="container py-16 max-w-md">
+      <div className="container py-8 sm:py-16 max-w-md">
         <h1 className="text-3xl font-bold mb-2">Log in</h1>
 
         <form
           onSubmit={submit}
-          className="space-y-4 rounded-xl border border-border bg-card p-6"
+          className="space-y-4 rounded-xl border border-border bg-card p-5 sm:p-6"
         >
           <div>
             <Label htmlFor="email">Email</Label>

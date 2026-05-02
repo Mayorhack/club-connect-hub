@@ -167,7 +167,7 @@ export default function AdminDashboard() {
   return (
     <Layout>
       <div className="container py-10 space-y-10">
-        <header className="flex items-center justify-between">
+        <header className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
           <div>
             <h1 className="text-3xl font-bold">Super admin</h1>
             <p className="text-sm text-muted-foreground">
@@ -319,14 +319,14 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Select
                       value={club.adminId ?? ""}
                       onValueChange={(value) =>
                         void handleReassign(club.id, value)
                       }
                     >
-                      <SelectTrigger className="w-56">
+                      <SelectTrigger className="w-full sm:w-56">
                         <SelectValue placeholder="No admin" />
                       </SelectTrigger>
                       <SelectContent>
@@ -378,10 +378,12 @@ export default function AdminDashboard() {
             {users.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center justify-between px-4 py-3 text-sm"
+                className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
               >
-                <span>{user.email}</span>
-                <Badge variant={badgeVariant(user.role)}>{user.role}</Badge>
+                <span className="truncate min-w-0 flex-1">{user.email}</span>
+                <Badge variant={badgeVariant(user.role)} className="shrink-0">
+                  {user.role}
+                </Badge>
               </div>
             ))}
           </div>

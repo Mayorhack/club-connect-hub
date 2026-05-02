@@ -26,14 +26,14 @@ export default function Signup() {
 
   return (
     <Layout>
-      <div className="container py-16 max-w-md">
+      <div className="container py-8 sm:py-16 max-w-md">
         <h1 className="text-3xl font-bold mb-2">Create an account</h1>
         <p className="text-sm text-muted-foreground mb-6">
           A super admin can later assign you as a club administrator.
         </p>
         <form
           onSubmit={submit}
-          className="space-y-4 rounded-xl border border-border bg-card p-6"
+          className="space-y-4 rounded-xl border border-border bg-card p-5 sm:p-6"
         >
           <div>
             <Label htmlFor="email">Email</Label>
