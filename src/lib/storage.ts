@@ -22,6 +22,25 @@ export const ALL_POSITIONS: Position[] = [
   "LW", "RW", "CF", "ST",
 ];
 
+export const POSITION_NAME: Record<Position, string> = {
+  GK: "Goalkeeper",
+  SW: "Sweeper",
+  CB: "Centre Back",
+  LB: "Left Back",
+  RB: "Right Back",
+  LWB: "Left Wing Back",
+  RWB: "Right Wing Back",
+  CDM: "Defensive Midfielder",
+  CM: "Central Midfielder",
+  CAM: "Attacking Midfielder",
+  LM: "Left Midfielder",
+  RM: "Right Midfielder",
+  LW: "Left Winger",
+  RW: "Right Winger",
+  CF: "Centre Forward",
+  ST: "Striker",
+};
+
 export interface User {
   id: string;
   email: string;
@@ -50,6 +69,10 @@ export interface Player {
   mapGroup?: string;
   churchUnit?: string;
   preferredFoot?: Foot;
+  /** Height in centimetres */
+  heightCm?: number;
+  /** Weight in kilograms */
+  weightKg?: number;
 }
 
 const KEYS = {
