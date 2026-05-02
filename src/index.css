@@ -140,7 +140,28 @@ All colors MUST be HSL.
   h5,
   h6 {
     font-family: "Bebas Neue", sans-serif;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em !important;
+    line-height: 1.15;
+    margin-bottom: 0.4em;
+  }
+
+  h1 {
+    font-size: 3rem;
+  }
+  h2 {
+    font-size: 2.25rem;
+  }
+  h3 {
+    font-size: 1.75rem;
+  }
+  h4 {
+    font-size: 1.35rem;
+  }
+  h5 {
+    font-size: 1.1rem;
+  }
+  h6 {
+    font-size: 0.95rem;
   }
 
   p,
