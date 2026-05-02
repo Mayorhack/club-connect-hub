@@ -1,5 +1,26 @@
 export type Role = "super" | "club" | "user";
-export type Position = "GK" | "DEF" | "MID" | "FWD";
+export type Position =
+  | "GK"
+  | "CB" | "LB" | "RB" | "LWB" | "RWB" | "SW"
+  | "CDM" | "CM" | "CAM" | "LM" | "RM"
+  | "LW" | "RW" | "CF" | "ST";
+
+export type PositionGroup = "GK" | "DEF" | "MID" | "FWD";
+export type Foot = "right" | "left" | "both";
+
+export const POSITION_GROUP: Record<Position, PositionGroup> = {
+  GK: "GK",
+  CB: "DEF", LB: "DEF", RB: "DEF", LWB: "DEF", RWB: "DEF", SW: "DEF",
+  CDM: "MID", CM: "MID", CAM: "MID", LM: "MID", RM: "MID",
+  LW: "FWD", RW: "FWD", CF: "FWD", ST: "FWD",
+};
+
+export const ALL_POSITIONS: Position[] = [
+  "GK",
+  "SW", "CB", "LB", "RB", "LWB", "RWB",
+  "CDM", "CM", "CAM", "LM", "RM",
+  "LW", "RW", "CF", "ST",
+];
 
 export interface User {
   id: string;
@@ -21,10 +42,14 @@ export interface Club {
 export interface Player {
   id: string;
   clubId: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   position: Position;
   jerseyNumber: number;
   photoUrl?: string;
+  mapGroup?: string;
+  churchUnit?: string;
+  preferredFoot?: Foot;
 }
 
 const KEYS = {
@@ -32,7 +57,7 @@ const KEYS = {
   session: "fm.session",
   clubs: "fm.clubs",
   players: "fm.players",
-  seeded: "fm.seeded",
+  seeded: "fm.seeded.v2",
 };
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -83,23 +108,27 @@ export function seedIfNeeded() {
     { id: club2, name: "Coastal United", city: "Brighton", foundedYear: 1921, adminId: clubAdmin2 },
   ];
 
-  const mk = (clubId: string, n: string, position: Position, jerseyNumber: number): Player => ({
-    id: uid(), clubId, name: n, position, jerseyNumber,
-  });
+  const mk = (clubId: string, n: string, position: Position, jerseyNumber: number): Player => {
+    const [firstName, ...rest] = n.split(" ");
+    return {
+      id: uid(), clubId, firstName, lastName: rest.join(" "),
+      position, jerseyNumber, preferredFoot: "right",
+    };
+  };
 
   const players: Player[] = [
     mk(club1, "James Carter", "GK", 1),
     mk(club1, "Owen Reid", "GK", 22),
-    mk(club1, "Marco Diaz", "DEF", 4),
-    mk(club1, "Liam Hughes", "DEF", 5),
-    mk(club1, "Tom Becker", "MID", 8),
-    mk(club1, "Noah Pierce", "MID", 10),
-    mk(club1, "Jude Walker", "FWD", 9),
+    mk(club1, "Marco Diaz", "CB", 4),
+    mk(club1, "Liam Hughes", "LB", 5),
+    mk(club1, "Tom Becker", "CM", 8),
+    mk(club1, "Noah Pierce", "CAM", 10),
+    mk(club1, "Jude Walker", "ST", 9),
     mk(club2, "Sam Holt", "GK", 1),
     mk(club2, "Eli Banks", "GK", 13),
-    mk(club2, "Ravi Shah", "DEF", 3),
-    mk(club2, "Kai Mendes", "MID", 6),
-    mk(club2, "Theo Vance", "FWD", 11),
+    mk(club2, "Ravi Shah", "RB", 3),
+    mk(club2, "Kai Mendes", "CDM", 6),
+    mk(club2, "Theo Vance", "LW", 11),
   ];
 
   setUsers(users);

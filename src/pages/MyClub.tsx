@@ -1,17 +1,35 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, ChangeEvent } from "react";
 import { Layout } from "@/components/Layout";
 import { useAuth } from "@/lib/auth";
-import { getClubs, getPlayers, Player, Position, setClubs, setPlayers, uid } from "@/lib/storage";
+import {
+  ALL_POSITIONS, Foot, getClubs, getPlayers, Player, Position,
+  setClubs, setPlayers, uid,
+} from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PositionBadge } from "@/components/PositionBadge";
-import { Plus, Trash2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, AlertCircle, CheckCircle2, Footprints, Upload } from "lucide-react";
 import { toast } from "sonner";
 
-const POSITIONS: Position[] = ["GK", "DEF", "MID", "FWD"];
+const FEET: Foot[] = ["right", "left", "both"];
+
+const emptyForm = {
+  firstName: "",
+  lastName: "",
+  position: "CM" as Position,
+  jerseyNumber: 1,
+  mapGroup: "",
+  churchUnit: "",
+  preferredFoot: "right" as Foot,
+  photoUrl: "",
+};
+
+function initials(name: string) {
+  return name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+}
 
 export default function MyClub() {
   const { user } = useAuth();
@@ -19,14 +37,13 @@ export default function MyClub() {
   const refresh = () => force((x) => x + 1);
 
   const club = getClubs().find((c) => c.id === user?.clubId);
-  const players = club ? getPlayers().filter((p) => p.clubId === club.id).sort((a, b) => a.jerseyNumber - b.jerseyNumber) : [];
+  const players = club
+    ? getPlayers().filter((p) => p.clubId === club.id).sort((a, b) => a.jerseyNumber - b.jerseyNumber)
+    : [];
   const gkCount = players.filter((p) => p.position === "GK").length;
 
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [position, setPosition] = useState<Position>("MID");
-  const [num, setNum] = useState<number>(1);
-  const [photo, setPhoto] = useState("");
+  const [form, setForm] = useState(emptyForm);
 
   // Club info edit
   const [editName, setEditName] = useState(club?.name || "");
@@ -51,17 +68,37 @@ export default function MyClub() {
     refresh();
   };
 
+  const handleImage = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) return toast.error("Image must be under 2MB");
+    const reader = new FileReader();
+    reader.onload = () => setForm((f) => ({ ...f, photoUrl: String(reader.result) }));
+    reader.readAsDataURL(file);
+  };
+
   const addPlayer = (e: FormEvent) => {
     e.preventDefault();
     if (players.length >= 25) return toast.error("Squad limit (25) reached");
-    if (!name.trim()) return toast.error("Name required");
-    if (num < 1 || num > 99) return toast.error("Jersey number must be 1–99");
-    if (players.some((p) => p.jerseyNumber === num)) return toast.error(`Jersey #${num} already taken`);
-    const p: Player = { id: uid(), clubId: club.id, name: name.trim(), position, jerseyNumber: num, photoUrl: photo.trim() || undefined };
+    if (!form.firstName.trim() || !form.lastName.trim()) return toast.error("First and last name required");
+    if (form.jerseyNumber < 1 || form.jerseyNumber > 99) return toast.error("Jersey number must be 1–99");
+    if (players.some((p) => p.jerseyNumber === form.jerseyNumber)) return toast.error(`Jersey #${form.jerseyNumber} already taken`);
+    const p: Player = {
+      id: uid(),
+      clubId: club.id,
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
+      position: form.position,
+      jerseyNumber: form.jerseyNumber,
+      mapGroup: form.mapGroup.trim() || undefined,
+      churchUnit: form.churchUnit.trim() || undefined,
+      preferredFoot: form.preferredFoot,
+      photoUrl: form.photoUrl || undefined,
+    };
     setPlayers([...getPlayers(), p]);
     toast.success("Player added");
     setOpen(false);
-    setName(""); setPosition("MID"); setNum(1); setPhoto("");
+    setForm(emptyForm);
     refresh();
   };
 
@@ -106,56 +143,111 @@ export default function MyClub() {
               <DialogTrigger asChild>
                 <Button disabled={squadFull}><Plus className="h-4 w-4 mr-1" /> Add player</Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader><DialogTitle>Add player</DialogTitle></DialogHeader>
                 <form onSubmit={addPlayer} className="space-y-4">
-                  <div><Label>Full name</Label><Input value={name} onChange={(e) => setName(e.target.value)} required /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>First name</Label><Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} required /></div>
+                    <div><Label>Last name</Label><Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} required /></div>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
+                      <Label>Player number</Label>
+                      <Input type="number" value={form.jerseyNumber} min={1} max={99} onChange={(e) => setForm({ ...form, jerseyNumber: Number(e.target.value) })} />
+                    </div>
+                    <div>
                       <Label>Position</Label>
-                      <Select value={position} onValueChange={(v) => setPosition(v as Position)}>
+                      <Select value={form.position} onValueChange={(v) => setForm({ ...form, position: v as Position })}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {POSITIONS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                        <SelectContent className="max-h-72">
+                          {ALL_POSITIONS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
-                    <div><Label>Jersey #</Label><Input type="number" value={num} min={1} max={99} onChange={(e) => setNum(Number(e.target.value))} /></div>
                   </div>
-                  <div><Label>Photo URL (optional)</Label><Input value={photo} onChange={(e) => setPhoto(e.target.value)} placeholder="https://..." /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Map group</Label><Input value={form.mapGroup} onChange={(e) => setForm({ ...form, mapGroup: e.target.value })} /></div>
+                    <div><Label>Church unit</Label><Input value={form.churchUnit} onChange={(e) => setForm({ ...form, churchUnit: e.target.value })} /></div>
+                  </div>
+                  <div>
+                    <Label>Preferred foot</Label>
+                    <Select value={form.preferredFoot} onValueChange={(v) => setForm({ ...form, preferredFoot: v as Foot })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {FEET.map((f) => <SelectItem key={f} value={f} className="capitalize">{f}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Player photo</Label>
+                    <div className="flex items-center gap-3 mt-1">
+                      <div className="h-14 w-14 rounded-full bg-secondary overflow-hidden flex items-center justify-center text-xs text-muted-foreground border border-border">
+                        {form.photoUrl ? <img src={form.photoUrl} alt="preview" className="h-full w-full object-cover" /> : <Upload className="h-5 w-5" />}
+                      </div>
+                      <Input type="file" accept="image/*" onChange={handleImage} className="cursor-pointer" />
+                    </div>
+                  </div>
                   <Button type="submit" className="w-full">Add to squad</Button>
                 </form>
               </DialogContent>
             </Dialog>
           </div>
 
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary text-secondary-foreground">
-                <tr>
-                  <th className="text-left p-3 w-16">#</th>
-                  <th className="text-left p-3">Name</th>
-                  <th className="text-left p-3 w-28">Position</th>
-                  <th className="p-3 w-12"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {players.map((p) => (
-                  <tr key={p.id} className="border-t border-border">
-                    <td className="p-3 font-bold">{p.jerseyNumber}</td>
-                    <td className="p-3">{p.name}</td>
-                    <td className="p-3"><PositionBadge position={p.position} /></td>
-                    <td className="p-3 text-right">
-                      <Button variant="ghost" size="icon" onClick={() => removePlayer(p.id)}><Trash2 className="h-4 w-4" /></Button>
-                    </td>
-                  </tr>
-                ))}
-                {players.length === 0 && (
-                  <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No players yet — add your first.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          {players.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border p-12 text-center text-muted-foreground">
+              No players yet — add your first.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {players.map((p, i) => {
+                const fullName = `${p.firstName} ${p.lastName}`.trim();
+                return (
+                  <div
+                    key={p.id}
+                    className="group relative rounded-xl border border-border bg-card p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card)] animate-fade-in"
+                    style={{ animationDelay: `${i * 40}ms` }}
+                  >
+                    <button
+                      onClick={() => removePlayer(p.id)}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      aria-label="Remove"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                    <div className="flex items-start gap-3">
+                      <div className="relative h-16 w-16 shrink-0 rounded-full bg-secondary overflow-hidden flex items-center justify-center font-bold text-secondary-foreground transition-transform duration-300 group-hover:scale-105">
+                        {p.photoUrl ? (
+                          <img src={p.photoUrl} alt={fullName} className="h-full w-full object-cover" />
+                        ) : (
+                          initials(fullName)
+                        )}
+                        <span className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center border-2 border-card">
+                          {p.jerseyNumber}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold leading-tight truncate">{fullName}</div>
+                        <div className="mt-1 flex items-center gap-2 flex-wrap">
+                          <PositionBadge position={p.position} />
+                          {p.preferredFoot && (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground capitalize">
+                              <Footprints className="h-3 w-3" /> {p.preferredFoot}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {(p.mapGroup || p.churchUnit) && (
+                      <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground space-y-0.5">
+                        {p.mapGroup && <div><span className="font-medium text-foreground">Map group:</span> {p.mapGroup}</div>}
+                        {p.churchUnit && <div><span className="font-medium text-foreground">Church unit:</span> {p.churchUnit}</div>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         <section>

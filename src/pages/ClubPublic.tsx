@@ -1,10 +1,10 @@
 import { useParams, Link } from "react-router-dom";
 import { Layout } from "@/components/Layout";
-import { getClubs, playersByClub, Position } from "@/lib/storage";
+import { getClubs, playersByClub, POSITION_GROUP, PositionGroup } from "@/lib/storage";
 import { PlayerCard } from "@/components/PlayerCard";
 import { ArrowLeft, AlertCircle, Trophy } from "lucide-react";
 
-const GROUPS: { key: Position; label: string }[] = [
+const GROUPS: { key: PositionGroup; label: string }[] = [
   { key: "GK", label: "Goalkeepers" },
   { key: "DEF", label: "Defenders" },
   { key: "MID", label: "Midfielders" },
@@ -61,7 +61,7 @@ export default function ClubPublic() {
         )}
 
         {GROUPS.map((g) => {
-          const list = players.filter((p) => p.position === g.key);
+          const list = players.filter((p) => POSITION_GROUP[p.position] === g.key);
           if (list.length === 0) return null;
           return (
             <div key={g.key}>
