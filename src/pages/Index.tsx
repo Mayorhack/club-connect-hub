@@ -486,7 +486,7 @@ const Index = () => {
 
   const clubMap = Object.fromEntries(clubs.map((c) => [c.id, c]));
   const featuresContainerRef = useRevealContainer();
-  const clubsHeadingRef = useReveal<HTMLDivElement>();
+  const clubsHeadingRef = useReveal();
   const clubsContainerRef = useRevealContainer();
 
   // "Players to Watch" — spotlight players with the most metadata filled in
