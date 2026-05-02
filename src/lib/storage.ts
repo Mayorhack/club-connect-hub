@@ -119,16 +119,16 @@ export function seedIfNeeded() {
   const players: Player[] = [
     mk(club1, "James Carter", "GK", 1),
     mk(club1, "Owen Reid", "GK", 22),
-    mk(club1, "Marco Diaz", "DEF", 4),
-    mk(club1, "Liam Hughes", "DEF", 5),
-    mk(club1, "Tom Becker", "MID", 8),
-    mk(club1, "Noah Pierce", "MID", 10),
-    mk(club1, "Jude Walker", "FWD", 9),
+    mk(club1, "Marco Diaz", "CB", 4),
+    mk(club1, "Liam Hughes", "LB", 5),
+    mk(club1, "Tom Becker", "CM", 8),
+    mk(club1, "Noah Pierce", "CAM", 10),
+    mk(club1, "Jude Walker", "ST", 9),
     mk(club2, "Sam Holt", "GK", 1),
     mk(club2, "Eli Banks", "GK", 13),
-    mk(club2, "Ravi Shah", "DEF", 3),
-    mk(club2, "Kai Mendes", "MID", 6),
-    mk(club2, "Theo Vance", "FWD", 11),
+    mk(club2, "Ravi Shah", "RB", 3),
+    mk(club2, "Kai Mendes", "CDM", 6),
+    mk(club2, "Theo Vance", "LW", 11),
   ];
 
   setUsers(users);
