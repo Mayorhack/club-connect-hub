@@ -4,7 +4,9 @@ import { Link } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import {
   getClubs,
+  getFixtures,
   getPlayers,
+  type MatchFixture,
   playersByClub,
   type Club,
   type Player,
@@ -76,6 +78,39 @@ const FEATURES = [
     desc: "Detailed cards with jersey numbers, positions, physical stats, and more — all in one place.",
   },
 ];
+
+function formatFixtureDate(dateIso: string): string {
+  const dt = new Date(`${dateIso}T12:00:00`);
+  return dt.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function UpcomingFixtureCard({
+  fixture,
+  homeName,
+  awayName,
+}: Readonly<{ fixture: MatchFixture; homeName: string; awayName: string }>) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 hover:border-primary/30 transition-colors">
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+        Matchday {fixture.matchday} · {formatFixtureDate(fixture.kickoffDate)}
+      </p>
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold truncate">{homeName}</p>
+        <span className="text-xs text-muted-foreground">vs</span>
+        <p className="text-sm font-semibold truncate text-right">{awayName}</p>
+      </div>
+      {fixture.venue && (
+        <p className="mt-2 text-xs text-muted-foreground truncate">
+          Venue: {fixture.venue}
+        </p>
+      )}
+    </div>
+  );
+}
 
 // ── Mini slider hook ─────────────────────────────────────────────────────────
 function useSlider(length: number, auto = true) {
@@ -497,6 +532,10 @@ const Index = () => {
     queryKey: ["players"],
     queryFn: getPlayers,
   });
+  const { data: fixtures = [] } = useQuery({
+    queryKey: ["fixtures"],
+    queryFn: getFixtures,
+  });
   const totalPlayers = allPlayers.length;
 
   const clubMap = Object.fromEntries(clubs.map((c) => [c.id, c]));
@@ -510,6 +549,17 @@ const Index = () => {
       return score(b) - score(a);
     })
     .slice(0, 9);
+
+  const upcomingFixtures = [...fixtures]
+    .filter(
+      (fixture) =>
+        fixture.homeScore === undefined && fixture.awayScore === undefined,
+    )
+    .sort((a, b) => {
+      if (a.matchday !== b.matchday) return a.matchday - b.matchday;
+      return a.kickoffDate.localeCompare(b.kickoffDate);
+    })
+    .slice(0, 3);
 
   return (
     <Layout>
@@ -553,6 +603,43 @@ const Index = () => {
         </div>
       </section>
 
+      {/* ── Upcoming fixtures ── */}
+      <section className="border-b border-border bg-background">
+        <div className="container py-12">
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-2xl font-bold">Upcoming Fixtures</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Next matches to watch in the PIE Cup.
+              </p>
+            </div>
+            <Link
+              to="/competition"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+            >
+              View all fixtures <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          {upcomingFixtures.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">
+              No upcoming fixtures yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {upcomingFixtures.map((fixture) => (
+                <UpcomingFixtureCard
+                  key={fixture.id}
+                  fixture={fixture}
+                  homeName={clubMap[fixture.homeClubId]?.name ?? "Unknown"}
+                  awayName={clubMap[fixture.awayClubId]?.name ?? "Unknown"}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* ── Players to Watch slider ── */}
       {spotlightPlayers.length > 0 && (
         <div className="border-b border-border">
@@ -573,7 +660,7 @@ const Index = () => {
       {clubs.length > 0 && (
         <div className="border-b border-border">
           <Slider
-            items={clubs}
+            items={clubs.slice(0, 4)} // Show only first 6 clubs for spotlight
             title="Teams to Watch"
             subtitle="All registered clubs competing in the PIE Cup"
             icon={Trophy}

@@ -2,12 +2,18 @@ import { FormEvent, useState, useRef, ChangeEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import {
+  createFixture,
   createClub as apiCreateClub,
+  deleteFixture,
   deleteClub as apiDeleteClub,
   getClubs,
+  getFixtures,
+  getMatchGoals,
   getPlayers,
   getUsers,
   playersByClub,
+  setMatchPlayerGoals,
+  updateFixture,
   updateClub,
   updateProfile,
 } from "@/lib/storage";
@@ -38,6 +44,11 @@ function badgeVariant(role: string) {
   return "outline" as const;
 }
 
+function readFormString(formData: FormData, key: string): string {
+  const value = formData.get(key);
+  return typeof value === "string" ? value : "";
+}
+
 export default function AdminDashboard() {
   const qc = useQueryClient();
   const { data: clubs = [] } = useQuery({
@@ -52,8 +63,18 @@ export default function AdminDashboard() {
     queryKey: ["players"],
     queryFn: getPlayers,
   });
+  const { data: fixtures = [] } = useQuery({
+    queryKey: ["fixtures"],
+    queryFn: getFixtures,
+  });
+  const { data: matchGoals = [] } = useQuery({
+    queryKey: ["match-goals"],
+    queryFn: getMatchGoals,
+  });
 
   const [open, setOpen] = useState(false);
+  const [fixtureOpen, setFixtureOpen] = useState(false);
+  const [scorersFixtureId, setScorersFixtureId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
@@ -62,7 +83,13 @@ export default function AdminDashboard() {
   const [logoBase64, setLogoBase64] = useState("");
   const [adminId, setAdminId] = useState("");
   const [saving, setSaving] = useState(false);
+  const [savingFixture, setSavingFixture] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [fixtureMatchday, setFixtureMatchday] = useState(1);
+  const [fixtureDate, setFixtureDate] = useState("");
+  const [fixtureHomeClubId, setFixtureHomeClubId] = useState("");
+  const [fixtureAwayClubId, setFixtureAwayClubId] = useState("");
+  const [fixtureVenue, setFixtureVenue] = useState("");
 
   function handleLogoUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -88,8 +115,15 @@ export default function AdminDashboard() {
       qc.invalidateQueries({ queryKey: ["clubs"] }),
       qc.invalidateQueries({ queryKey: ["users"] }),
       qc.invalidateQueries({ queryKey: ["players"] }),
+      qc.invalidateQueries({ queryKey: ["fixtures"] }),
+      qc.invalidateQueries({ queryKey: ["match-goals"] }),
     ]);
   }
+
+  const sortedFixtures = [...fixtures].sort((a, b) => {
+    if (a.matchday !== b.matchday) return a.matchday - b.matchday;
+    return a.kickoffDate.localeCompare(b.kickoffDate);
+  });
 
   async function handleCreateClub(e: FormEvent) {
     e.preventDefault();
@@ -163,6 +197,158 @@ export default function AdminDashboard() {
       toast.error((error as Error).message);
     }
   }
+
+  async function handleCreateFixture(e: FormEvent) {
+    e.preventDefault();
+    if (!fixtureDate || !fixtureHomeClubId || !fixtureAwayClubId) {
+      toast.error("Matchday, date and both clubs are required");
+      return;
+    }
+    if (fixtureHomeClubId === fixtureAwayClubId) {
+      toast.error("Home and away club must be different");
+      return;
+    }
+
+    setSavingFixture(true);
+    try {
+      await createFixture({
+        matchday: fixtureMatchday,
+        kickoffDate: fixtureDate,
+        homeClubId: fixtureHomeClubId,
+        awayClubId: fixtureAwayClubId,
+        venue: fixtureVenue.trim() || undefined,
+      });
+      toast.success("Fixture created");
+      setFixtureOpen(false);
+      setFixtureMatchday(1);
+      setFixtureDate("");
+      setFixtureHomeClubId("");
+      setFixtureAwayClubId("");
+      setFixtureVenue("");
+      await invalidateDashboard();
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setSavingFixture(false);
+    }
+  }
+
+  async function handleDeleteFixture(id: string) {
+    if (!confirm("Delete this fixture and all recorded goals?")) return;
+    try {
+      await deleteFixture(id);
+      toast.success("Fixture deleted");
+      await invalidateDashboard();
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
+  }
+
+  async function handleSaveFixtureMeta(fixtureId: string, formData: FormData) {
+    const matchday = Number(formData.get("matchday"));
+    const kickoffDate = readFormString(formData, "kickoffDate");
+    const venue = readFormString(formData, "venue").trim();
+
+    if (!kickoffDate || !matchday) {
+      toast.error("Matchday and date are required");
+      return;
+    }
+
+    try {
+      await updateFixture(fixtureId, {
+        matchday,
+        kickoffDate,
+        venue: venue || undefined,
+      });
+      toast.success("Fixture updated");
+      await invalidateDashboard();
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
+  }
+
+  async function handleSaveFixtureResult(
+    fixtureId: string,
+    homeScoreRaw: string,
+    awayScoreRaw: string,
+  ) {
+    const homeScore = Number(homeScoreRaw);
+    const awayScore = Number(awayScoreRaw);
+    if (
+      Number.isNaN(homeScore) ||
+      Number.isNaN(awayScore) ||
+      homeScore < 0 ||
+      awayScore < 0
+    ) {
+      toast.error("Scores must be valid numbers");
+      return;
+    }
+
+    try {
+      await updateFixture(fixtureId, { homeScore, awayScore });
+      toast.success("Result updated");
+      await invalidateDashboard();
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
+  }
+
+  async function handleSaveScorers(fixtureId: string, formData: FormData) {
+    const goalsPayload: Array<{
+      playerId: string;
+      clubId: string;
+      goals: number;
+    }> = [];
+
+    formData.forEach((value, key) => {
+      if (!key.startsWith("goals_")) return;
+      const playerId = key.replace("goals_", "");
+      const goals = typeof value === "string" ? Number(value) : 0;
+      if (Number.isNaN(goals) || goals <= 0) return;
+      const player = allPlayers.find((entry) => entry.id === playerId);
+      if (!player) return;
+      goalsPayload.push({
+        playerId,
+        clubId: player.clubId,
+        goals,
+      });
+    });
+
+    try {
+      await setMatchPlayerGoals(fixtureId, goalsPayload);
+      toast.success("Scorers updated");
+      setScorersFixtureId(null);
+      await invalidateDashboard();
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
+  }
+
+  const scorerFixture = sortedFixtures.find(
+    (fixture) => fixture.id === scorersFixtureId,
+  );
+  const scorerPlayers = scorerFixture
+    ? allPlayers
+        .filter(
+          (player) =>
+            player.clubId === scorerFixture.homeClubId ||
+            player.clubId === scorerFixture.awayClubId,
+        )
+        .sort((a, b) => {
+          if (a.clubId !== b.clubId) return a.clubId.localeCompare(b.clubId);
+          if (a.jerseyNumber !== b.jerseyNumber)
+            return a.jerseyNumber - b.jerseyNumber;
+          return `${a.firstName} ${a.lastName}`.localeCompare(
+            `${b.firstName} ${b.lastName}`,
+          );
+        })
+    : [];
+
+  const scorerMap = new Map(
+    matchGoals
+      .filter((goal) => goal.matchId === scorersFixtureId)
+      .map((goal) => [goal.playerId, goal.goals]),
+  );
 
   return (
     <Layout>
@@ -387,6 +573,294 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
+        </section>
+
+        <section>
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h2 className="text-xl font-bold">Fixtures ({fixtures.length})</h2>
+
+            <Dialog open={fixtureOpen} onOpenChange={setFixtureOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-1 h-4 w-4" /> New fixture
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create fixture</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleCreateFixture} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Matchday</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={fixtureMatchday}
+                        onChange={(e) =>
+                          setFixtureMatchday(Number(e.target.value))
+                        }
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Date</Label>
+                      <Input
+                        type="date"
+                        value={fixtureDate}
+                        onChange={(e) => setFixtureDate(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>Home club</Label>
+                      <Select
+                        value={fixtureHomeClubId}
+                        onValueChange={setFixtureHomeClubId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select home club" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clubs.map((club) => (
+                            <SelectItem key={club.id} value={club.id}>
+                              {club.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Away club</Label>
+                      <Select
+                        value={fixtureAwayClubId}
+                        onValueChange={setFixtureAwayClubId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select away club" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clubs.map((club) => (
+                            <SelectItem key={club.id} value={club.id}>
+                              {club.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Venue (optional)</Label>
+                    <Input
+                      value={fixtureVenue}
+                      onChange={(e) => setFixtureVenue(e.target.value)}
+                      placeholder="e.g. CCI Main Pitch"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={savingFixture}
+                  >
+                    {savingFixture ? "Saving..." : "Create fixture"}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="space-y-3">
+            {sortedFixtures.map((fixture) => {
+              const home = clubs.find((club) => club.id === fixture.homeClubId);
+              const away = clubs.find((club) => club.id === fixture.awayClubId);
+
+              return (
+                <div
+                  key={fixture.id}
+                  className="rounded-xl border border-border bg-card p-4 space-y-3"
+                >
+                  <form
+                    className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void handleSaveFixtureMeta(
+                        fixture.id,
+                        new FormData(e.currentTarget),
+                      );
+                    }}
+                  >
+                    <div>
+                      <Label>Matchday</Label>
+                      <Input
+                        name="matchday"
+                        type="number"
+                        min={1}
+                        defaultValue={fixture.matchday}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Date</Label>
+                      <Input
+                        name="kickoffDate"
+                        type="date"
+                        defaultValue={fixture.kickoffDate}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Venue</Label>
+                      <Input name="venue" defaultValue={fixture.venue ?? ""} />
+                    </div>
+                    <div className="flex items-end">
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        variant="secondary"
+                      >
+                        Save fixture
+                      </Button>
+                    </div>
+                  </form>
+
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {home?.name ?? "Unknown"} vs {away?.name ?? "Unknown"}
+                      </p>
+                    </div>
+
+                    <form
+                      className="flex items-center gap-2"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const fd = new FormData(e.currentTarget);
+                        void handleSaveFixtureResult(
+                          fixture.id,
+                          readFormString(fd, "homeScore"),
+                          readFormString(fd, "awayScore"),
+                        );
+                      }}
+                    >
+                      <Input
+                        name="homeScore"
+                        type="number"
+                        min={0}
+                        className="w-16"
+                        defaultValue={fixture.homeScore ?? 0}
+                      />
+                      <span className="text-sm text-muted-foreground">-</span>
+                      <Input
+                        name="awayScore"
+                        type="number"
+                        min={0}
+                        className="w-16"
+                        defaultValue={fixture.awayScore ?? 0}
+                      />
+                      <Button type="submit" size="sm" variant="outline">
+                        Save result
+                      </Button>
+                    </form>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setScorersFixtureId(fixture.id)}
+                      >
+                        Scorers
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => void handleDeleteFixture(fixture.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {sortedFixtures.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No fixtures yet. Add the first matchday fixture above.
+              </p>
+            )}
+          </div>
+
+          <Dialog
+            open={Boolean(scorersFixtureId)}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) setScorersFixtureId(null);
+            }}
+          >
+            <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Update scorers</DialogTitle>
+              </DialogHeader>
+
+              {scorerFixture ? (
+                <form
+                  className="space-y-3"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void handleSaveScorers(
+                      scorerFixture.id,
+                      new FormData(e.currentTarget),
+                    );
+                  }}
+                >
+                  {scorerPlayers.map((player) => {
+                    const clubName =
+                      clubs.find((club) => club.id === player.clubId)?.name ??
+                      "Unknown";
+                    return (
+                      <div
+                        key={player.id}
+                        className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg border border-border bg-background px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {player.firstName} {player.lastName}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {clubName} · #{player.jerseyNumber}
+                          </p>
+                        </div>
+                        <Input
+                          name={`goals_${player.id}`}
+                          type="number"
+                          min={0}
+                          defaultValue={scorerMap.get(player.id) ?? 0}
+                          className="w-20"
+                        />
+                      </div>
+                    );
+                  })}
+
+                  {scorerPlayers.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No players found for this fixture's clubs.
+                    </p>
+                  )}
+
+                  <Button type="submit" className="w-full">
+                    Save scorers
+                  </Button>
+                </form>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Select a fixture first.
+                </p>
+              )}
+            </DialogContent>
+          </Dialog>
         </section>
       </div>
     </Layout>

@@ -37,6 +37,12 @@ function DesktopNav({ user, transparent, theme, toggle, onLogout }: NavProps) {
       >
         Clubs
       </NavLink>
+      <NavLink
+        to="/competition"
+        className={({ isActive }) => navLinkClass(isActive, transparent)}
+      >
+        Competition
+      </NavLink>
       {user?.role === "super" && (
         <NavLink
           to="/admin"
@@ -111,6 +117,12 @@ function MobileMenu({ user, onLogout }: MobileMenuProps) {
           className={({ isActive }) => mobileNavLinkClass(isActive)}
         >
           Clubs
+        </NavLink>
+        <NavLink
+          to="/competition"
+          className={({ isActive }) => mobileNavLinkClass(isActive)}
+        >
+          Competition
         </NavLink>
         {user?.role === "super" && (
           <NavLink

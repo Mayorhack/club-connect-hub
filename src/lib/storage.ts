@@ -116,6 +116,42 @@ export interface Player {
   weightKg?: number;
 }
 
+export interface MatchFixture {
+  id: string;
+  matchday: number;
+  kickoffDate: string;
+  homeClubId: string;
+  awayClubId: string;
+  homeScore?: number;
+  awayScore?: number;
+  venue?: string;
+}
+
+export interface MatchGoal {
+  id: string;
+  matchId: string;
+  playerId: string;
+  clubId: string;
+  goals: number;
+}
+
+export interface LeagueTableRow {
+  clubId: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  points: number;
+}
+
+export interface TopScorerRow {
+  playerId: string;
+  goals: number;
+}
+
 // ── Row types (Supabase returns snake_case) ───────────────────────────────────
 
 interface ProfileRow {
@@ -147,6 +183,52 @@ interface PlayerRow {
   preferred_foot: string | null;
   height_cm: number | null;
   weight_kg: number | null;
+}
+
+interface MatchFixtureRow {
+  id: string;
+  matchday: number;
+  kickoff_date: string;
+  home_club_id: string;
+  away_club_id: string;
+  home_score: number | null;
+  away_score: number | null;
+  venue: string | null;
+}
+
+interface MatchGoalRow {
+  id: string;
+  match_id: string;
+  player_id: string;
+  club_id: string;
+  goals: number;
+}
+
+type SupabaseLikeError = {
+  code?: string;
+  message?: string;
+} | null;
+
+function isMissingTableError(
+  error: SupabaseLikeError,
+  tableName: string,
+): boolean {
+  if (error?.code !== "PGRST205") return false;
+
+  const msg = error.message ?? "";
+  if (!msg) return true;
+
+  return (
+    msg.includes(`public.${tableName}`) ||
+    msg.includes(`'public.${tableName}'`) ||
+    msg.includes(`"public.${tableName}"`)
+  );
+}
+
+function missingTableMessage(tableName: string): string {
+  const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? "";
+  const host = url ? new URL(url).host : "unknown-host";
+  return `Database table public.${tableName} is missing in the active Supabase project (${host}). Run supabase/schema.sql in that same project, then retry.`;
 }
 
 // ── Mappers ───────────────────────────────────────────────────────────────────
@@ -188,6 +270,29 @@ function rowToPlayer(r: PlayerRow): Player {
   };
 }
 
+function rowToFixture(r: MatchFixtureRow): MatchFixture {
+  return {
+    id: r.id,
+    matchday: r.matchday,
+    kickoffDate: r.kickoff_date,
+    homeClubId: r.home_club_id,
+    awayClubId: r.away_club_id,
+    homeScore: r.home_score ?? undefined,
+    awayScore: r.away_score ?? undefined,
+    venue: r.venue ?? undefined,
+  };
+}
+
+function rowToGoal(r: MatchGoalRow): MatchGoal {
+  return {
+    id: r.id,
+    matchId: r.match_id,
+    playerId: r.player_id,
+    clubId: r.club_id,
+    goals: r.goals,
+  };
+}
+
 // ── Reads ─────────────────────────────────────────────────────────────────────
 
 export async function getUsers(): Promise<User[]> {
@@ -222,6 +327,32 @@ export async function getPlayersByClub(clubId: string): Promise<Player[]> {
     .order("jersey_number");
   if (error) throw error;
   return ((data ?? []) as PlayerRow[]).map(rowToPlayer);
+}
+
+export async function getFixtures(): Promise<MatchFixture[]> {
+  const { data, error } = await supabase
+    .from("fixtures")
+    .select("*")
+    .order("matchday")
+    .order("kickoff_date")
+    .order("created_at");
+  if (error) {
+    if (isMissingTableError(error, "fixtures")) return [];
+    throw error;
+  }
+  return ((data ?? []) as MatchFixtureRow[]).map(rowToFixture);
+}
+
+export async function getMatchGoals(): Promise<MatchGoal[]> {
+  const { data, error } = await supabase
+    .from("match_goals")
+    .select("*")
+    .order("goals", { ascending: false });
+  if (error) {
+    if (isMissingTableError(error, "match_goals")) return [];
+    throw error;
+  }
+  return ((data ?? []) as MatchGoalRow[]).map(rowToGoal);
 }
 
 /** Sync helper — filter an already-loaded players array by club. */
@@ -306,6 +437,101 @@ export async function deletePlayer(id: string): Promise<void> {
   if (error) throw error;
 }
 
+// ── Fixture mutations ─────────────────────────────────────────────────────────
+
+export async function createFixture(
+  fixture: Omit<MatchFixture, "id" | "homeScore" | "awayScore"> & {
+    homeScore?: number;
+    awayScore?: number;
+  },
+): Promise<MatchFixture> {
+  const { data, error } = await supabase
+    .from("fixtures")
+    .insert({
+      matchday: fixture.matchday,
+      kickoff_date: fixture.kickoffDate,
+      home_club_id: fixture.homeClubId,
+      away_club_id: fixture.awayClubId,
+      home_score: fixture.homeScore ?? null,
+      away_score: fixture.awayScore ?? null,
+      venue: fixture.venue ?? null,
+    })
+    .select()
+    .single();
+  if (error) {
+    if (isMissingTableError(error, "fixtures")) {
+      throw new Error(missingTableMessage("fixtures"));
+    }
+    throw error;
+  }
+  return rowToFixture(data as MatchFixtureRow);
+}
+
+export async function updateFixture(
+  id: string,
+  updates: Partial<Omit<MatchFixture, "id">>,
+): Promise<void> {
+  const row: Record<string, unknown> = {};
+  if (updates.matchday !== undefined) row.matchday = updates.matchday;
+  if (updates.kickoffDate !== undefined) row.kickoff_date = updates.kickoffDate;
+  if (updates.homeClubId !== undefined) row.home_club_id = updates.homeClubId;
+  if (updates.awayClubId !== undefined) row.away_club_id = updates.awayClubId;
+  if (updates.homeScore !== undefined) row.home_score = updates.homeScore;
+  if (updates.awayScore !== undefined) row.away_score = updates.awayScore;
+  if (updates.venue !== undefined) row.venue = updates.venue ?? null;
+  const { error } = await supabase.from("fixtures").update(row).eq("id", id);
+  if (error) {
+    if (isMissingTableError(error, "fixtures")) {
+      throw new Error(missingTableMessage("fixtures"));
+    }
+    throw error;
+  }
+}
+
+export async function deleteFixture(id: string): Promise<void> {
+  const { error } = await supabase.from("fixtures").delete().eq("id", id);
+  if (error) {
+    if (isMissingTableError(error, "fixtures")) {
+      throw new Error(missingTableMessage("fixtures"));
+    }
+    throw error;
+  }
+}
+
+export async function setMatchPlayerGoals(
+  matchId: string,
+  goals: Array<{ playerId: string; clubId: string; goals: number }>,
+): Promise<void> {
+  const { error: deleteError } = await supabase
+    .from("match_goals")
+    .delete()
+    .eq("match_id", matchId);
+  if (deleteError) {
+    if (isMissingTableError(deleteError, "match_goals")) {
+      throw new Error(missingTableMessage("match_goals"));
+    }
+    throw deleteError;
+  }
+
+  const cleaned = goals.filter((entry) => entry.goals > 0);
+  if (cleaned.length === 0) return;
+
+  const { error: insertError } = await supabase.from("match_goals").insert(
+    cleaned.map((entry) => ({
+      match_id: matchId,
+      player_id: entry.playerId,
+      club_id: entry.clubId,
+      goals: entry.goals,
+    })),
+  );
+  if (insertError) {
+    if (isMissingTableError(insertError, "match_goals")) {
+      throw new Error(missingTableMessage("match_goals"));
+    }
+    throw insertError;
+  }
+}
+
 // ── Profile mutations ─────────────────────────────────────────────────────────
 
 export async function updateProfile(
@@ -320,4 +546,88 @@ export async function updateProfile(
     .update(row)
     .eq("id", userId);
   if (error) throw error;
+}
+
+// ── Competition helpers ───────────────────────────────────────────────────────
+
+export function buildLeagueTable(
+  clubs: Club[],
+  fixtures: MatchFixture[],
+): LeagueTableRow[] {
+  const map = new Map<string, LeagueTableRow>();
+  const clubNameMap = new Map(
+    clubs.map((club) => [club.id, club.name.toLowerCase()]),
+  );
+
+  clubs.forEach((club) => {
+    map.set(club.id, {
+      clubId: club.id,
+      played: 0,
+      won: 0,
+      drawn: 0,
+      lost: 0,
+      goalsFor: 0,
+      goalsAgainst: 0,
+      goalDifference: 0,
+      points: 0,
+    });
+  });
+
+  fixtures.forEach((fixture) => {
+    if (fixture.homeScore === undefined || fixture.awayScore === undefined) {
+      return;
+    }
+
+    const home = map.get(fixture.homeClubId);
+    const away = map.get(fixture.awayClubId);
+    if (!home || !away) return;
+
+    home.played += 1;
+    away.played += 1;
+    home.goalsFor += fixture.homeScore;
+    home.goalsAgainst += fixture.awayScore;
+    away.goalsFor += fixture.awayScore;
+    away.goalsAgainst += fixture.homeScore;
+
+    if (fixture.homeScore > fixture.awayScore) {
+      home.won += 1;
+      home.points += 3;
+      away.lost += 1;
+    } else if (fixture.homeScore < fixture.awayScore) {
+      away.won += 1;
+      away.points += 3;
+      home.lost += 1;
+    } else {
+      home.drawn += 1;
+      away.drawn += 1;
+      home.points += 1;
+      away.points += 1;
+    }
+  });
+
+  return Array.from(map.values())
+    .map((row) => ({
+      ...row,
+      goalDifference: row.goalsFor - row.goalsAgainst,
+    }))
+    .sort((a, b) => {
+      const aName = clubNameMap.get(a.clubId) ?? "";
+      const bName = clubNameMap.get(b.clubId) ?? "";
+      if (aName !== bName) return aName.localeCompare(bName);
+      return a.clubId.localeCompare(b.clubId);
+    });
+}
+
+export function buildTopScorers(goals: MatchGoal[]): TopScorerRow[] {
+  const totals = new Map<string, number>();
+  goals.forEach((entry) => {
+    totals.set(entry.playerId, (totals.get(entry.playerId) ?? 0) + entry.goals);
+  });
+
+  return Array.from(totals.entries())
+    .map(([playerId, scored]) => ({ playerId, goals: scored }))
+    .sort((a, b) => {
+      if (b.goals !== a.goals) return b.goals - a.goals;
+      return a.playerId.localeCompare(b.playerId);
+    });
 }
