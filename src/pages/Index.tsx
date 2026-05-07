@@ -3,8 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import {
+  buildTopScorers,
   getClubs,
   getFixtures,
+  getMatchGoals,
   getPlayers,
   type MatchFixture,
   playersByClub,
@@ -190,7 +192,8 @@ function useRevealContainer() {
 function PlayerSpotlight({
   player,
   club,
-}: Readonly<{ player: Player; club: Club | undefined }>) {
+  goals,
+}: Readonly<{ player: Player; club: Club | undefined; goals: number }>) {
   const fullName = `${player.firstName} ${player.lastName}`.trim();
   const initials = fullName
     .split(" ")
@@ -227,6 +230,9 @@ function PlayerSpotlight({
             <span className="truncate">{club.name}</span>
           </div>
         )}
+        <div className="mt-2 inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[11px] font-semibold">
+          {goals} goal{goals === 1 ? "" : "s"}
+        </div>
         <div className="mt-2 flex gap-3 text-[11px] text-muted-foreground">
           {!!player.heightCm && <span>{player.heightCm} cm</span>}
           {!!player.weightKg && <span>{player.weightKg} kg</span>}
@@ -385,7 +391,8 @@ function HeroCarousel({
 function ClubSpotlight({
   club,
   playerCount,
-}: Readonly<{ club: Club; playerCount: number }>) {
+  goalsScored,
+}: Readonly<{ club: Club; playerCount: number; goalsScored: number }>) {
   return (
     <Link
       to={`/clubs/${club.id}`}
@@ -422,10 +429,8 @@ function ClubSpotlight({
           <div className="text-muted-foreground mt-0.5">Players</div>
         </div>
         <div className="rounded-lg bg-muted px-3 py-2">
-          <div className="font-bold text-lg leading-none">
-            {club.foundedYear}
-          </div>
-          <div className="text-muted-foreground mt-0.5">Founded</div>
+          <div className="font-bold text-lg leading-none">{goalsScored}</div>
+          <div className="text-muted-foreground mt-0.5">Goals</div>
         </div>
       </div>
       <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden">
@@ -536,19 +541,51 @@ const Index = () => {
     queryKey: ["fixtures"],
     queryFn: getFixtures,
   });
+  const { data: matchGoals = [] } = useQuery({
+    queryKey: ["match-goals"],
+    queryFn: getMatchGoals,
+  });
   const totalPlayers = allPlayers.length;
 
   const clubMap = Object.fromEntries(clubs.map((c) => [c.id, c]));
   const featuresContainerRef = useRevealContainer();
 
-  // "Players to Watch" — spotlight players with the most metadata filled in
-  const spotlightPlayers = [...allPlayers]
-    .sort((a, b) => {
-      const score = (p: Player) =>
-        (p.heightCm ? 1 : 0) + (p.weightKg ? 1 : 0) + (p.preferredFoot ? 1 : 0);
-      return score(b) - score(a);
-    })
+  const topScorerRows = buildTopScorers(matchGoals);
+  const goalsByPlayerId = Object.fromEntries(
+    topScorerRows.map((row) => [row.playerId, row.goals]),
+  );
+  const playerById = Object.fromEntries(
+    allPlayers.map((player) => [player.id, player]),
+  );
+
+  const spotlightPlayers = topScorerRows
+    .map((row) => playerById[row.playerId])
+    .filter((player): player is Player => Boolean(player))
     .slice(0, 9);
+
+  const goalsByClubId = fixtures.reduce<Record<string, number>>(
+    (acc, fixture) => {
+      if (fixture.homeScore !== undefined) {
+        acc[fixture.homeClubId] =
+          (acc[fixture.homeClubId] ?? 0) + fixture.homeScore;
+      }
+      if (fixture.awayScore !== undefined) {
+        acc[fixture.awayClubId] =
+          (acc[fixture.awayClubId] ?? 0) + fixture.awayScore;
+      }
+      return acc;
+    },
+    {},
+  );
+
+  const teamWatchClubs = [...clubs]
+    .sort((a, b) => {
+      const goalsA = goalsByClubId[a.id] ?? 0;
+      const goalsB = goalsByClubId[b.id] ?? 0;
+      if (goalsB !== goalsA) return goalsB - goalsA;
+      return a.name.localeCompare(b.name);
+    })
+    .slice(0, 6);
 
   const upcomingFixtures = [...fixtures]
     .filter(
@@ -646,29 +683,34 @@ const Index = () => {
           <Slider
             items={spotlightPlayers}
             title="Players to Watch"
-            subtitle="Standout squad members across all clubs this season"
+            subtitle="Top goal scorers across all clubs this season"
             icon={Flame}
             visibleCount={3}
             renderSlide={(player) => (
-              <PlayerSpotlight player={player} club={clubMap[player.clubId]} />
+              <PlayerSpotlight
+                player={player}
+                club={clubMap[player.clubId]}
+                goals={goalsByPlayerId[player.id] ?? 0}
+              />
             )}
           />
         </div>
       )}
 
       {/* ── Teams to Watch slider ── */}
-      {clubs.length > 0 && (
+      {teamWatchClubs.length > 0 && (
         <div className="border-b border-border">
           <Slider
-            items={clubs.slice(0, 4)} // Show only first 6 clubs for spotlight
+            items={teamWatchClubs}
             title="Teams to Watch"
-            subtitle="All registered clubs competing in the PIE Cup"
+            subtitle="Clubs with the highest goals scored"
             icon={Trophy}
             visibleCount={3}
             renderSlide={(club) => (
               <ClubSpotlight
                 club={club}
                 playerCount={playersByClub(allPlayers, club.id).length}
+                goalsScored={goalsByClubId[club.id] ?? 0}
               />
             )}
           />

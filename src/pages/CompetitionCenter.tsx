@@ -74,6 +74,12 @@ export default function CompetitionCenter() {
   const rankedTable = useMemo(() => {
     return [...table].sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
+      if (a.points === 0 && b.points === 0) {
+        const aName = (clubMap.get(a.clubId)?.name ?? "").toLowerCase();
+        const bName = (clubMap.get(b.clubId)?.name ?? "").toLowerCase();
+        if (aName !== bName) return aName.localeCompare(bName);
+        return a.clubId.localeCompare(b.clubId);
+      }
       if (b.goalDifference !== a.goalDifference) {
         return b.goalDifference - a.goalDifference;
       }
