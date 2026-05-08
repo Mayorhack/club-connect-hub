@@ -100,13 +100,13 @@ export default function ClubPublic() {
       </section>
 
       <section className="container py-10 space-y-8">
-        {gkCount < 2 && (
+        {gkCount < 1 && (
           <div className="flex items-start gap-3 rounded-lg border border-accent/40 bg-accent/10 p-4 text-sm">
             <AlertCircle className="h-5 w-5 text-accent shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold">Squad incomplete</p>
               <p className="text-muted-foreground">
-                A registered squad needs at least 2 goalkeepers. This club
+                A registered squad needs at least 1 goalkeepers. This club
                 currently has {gkCount}.
               </p>
             </div>
