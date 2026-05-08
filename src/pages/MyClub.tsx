@@ -166,6 +166,7 @@ export default function MyClub() {
       return toast.error("Jersey number must be 1–99");
     if (players.some((p) => p.jerseyNumber === form.jerseyNumber))
       return toast.error(`Jersey #${form.jerseyNumber} already taken`);
+    if (!form.photoUrl) return toast.error("Player photo is required");
     const newPlayer: Omit<Player, "id"> = {
       clubId: club.id,
       firstName: form.firstName.trim(),
@@ -306,6 +307,7 @@ export default function MyClub() {
                             jerseyNumber: Number(e.target.value),
                           })
                         }
+                        required
                       />
                     </div>
                     <div>
@@ -315,6 +317,7 @@ export default function MyClub() {
                         onValueChange={(v) =>
                           setForm({ ...form, position: v as Position })
                         }
+                        required
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -416,6 +419,7 @@ export default function MyClub() {
                         accept="image/*"
                         onChange={handleImage}
                         className="cursor-pointer"
+                        required
                       />
                     </div>
                   </div>
