@@ -5,11 +5,13 @@ import { useAuth, roleHome } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getPlayerRegistrationDeadlineStatus } from "@/lib/registrationDeadline";
 import { toast } from "sonner";
 
 export default function Login() {
   const { login } = useAuth();
   const nav = useNavigate();
+  const deadline = getPlayerRegistrationDeadlineStatus();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -28,6 +30,10 @@ export default function Login() {
     <Layout>
       <div className="container py-8 sm:py-16 max-w-md">
         <h1 className="text-3xl font-bold mb-2">Log in</h1>
+        <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-950 shadow-sm">
+          <p className="font-semibold">Club admins</p>
+          <p className="mt-1 text-amber-900/90">{deadline.message}</p>
+        </div>
 
         <form
           onSubmit={submit}

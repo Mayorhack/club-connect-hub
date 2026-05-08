@@ -43,6 +43,7 @@ import {
   Ruler,
   Weight,
 } from "lucide-react";
+import { getPlayerRegistrationDeadlineStatus } from "@/lib/registrationDeadline";
 import { toast } from "sonner";
 
 const FEET: Foot[] = ["right", "left", "both"];
@@ -79,6 +80,7 @@ function initials(name: string) {
 export default function MyClub() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const deadline = getPlayerRegistrationDeadlineStatus();
   const { data: clubs = [] } = useQuery({
     queryKey: ["clubs"],
     queryFn: getClubs,
@@ -195,7 +197,7 @@ export default function MyClub() {
   };
 
   const squadFull = players.length >= 25;
-  const gkOk = gkCount >= 2;
+  const gkOk = gkCount >= 1;
 
   return (
     <Layout>
@@ -206,6 +208,20 @@ export default function MyClub() {
             Manage your squad and club info.
           </p>
         </header>
+
+        <section className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 text-amber-700" />
+            <div>
+              <p className="text-sm font-semibold text-amber-950">
+                Player registration deadline: {deadline.deadlineLabel}
+              </p>
+              <p className="mt-1 text-sm text-amber-900/90">
+                {deadline.message}
+              </p>
+            </div>
+          </div>
+        </section>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div
@@ -234,7 +250,7 @@ export default function MyClub() {
             <div>
               <div className="font-semibold">Goalkeepers</div>
               <div className="text-sm text-muted-foreground">
-                {gkCount} of minimum 2
+                {gkCount} of minimum 1
               </div>
             </div>
           </div>

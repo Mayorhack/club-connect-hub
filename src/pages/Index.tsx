@@ -25,6 +25,7 @@ import {
   Flame,
 } from "lucide-react";
 import { PositionBadge } from "@/components/PositionBadge";
+import crustMfbWhiteLogo from "@/assets/crust mfb (white).png";
 import lakeside2 from "@/assets/lakeside2.jpeg";
 import lakeside3 from "@/assets/lakeside3.jpeg";
 import lakeside4 from "@/assets/lakeside4.jpeg";
@@ -640,6 +641,37 @@ const Index = () => {
         </div>
       </section>
 
+      <section className="border-b border-border bg-[radial-gradient(circle_at_top_left,_rgba(235,179,66,0.18),_transparent_40%),linear-gradient(135deg,#111827,#0f172a_55%,#1f2937)] text-white">
+        <div className="container grid gap-8 py-12 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-200/90">
+              Our Sponsors
+            </p>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
+              Proudly supported by our sponsor.
+            </h2>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-200 sm:text-base">
+              We acknowledge Crust Microfinance Bank for supporting the PIE
+              Football Cup and helping us create a stronger competition
+              experience for clubs, players, and supporters.
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-white/15 bg-white/8 p-8 backdrop-blur-sm shadow-2xl">
+            <div className="flex min-h-40 items-center justify-center rounded-2xl border border-dashed border-white/15 bg-black/20 p-6">
+              <img
+                src={crustMfbWhiteLogo}
+                alt="Crust Microfinance Bank"
+                className="max-h-20 w-full object-contain"
+              />
+            </div>
+            <p className="mt-4 text-center text-xs uppercase tracking-[0.24em] text-slate-300">
+              Official sponsor
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ── Upcoming fixtures ── */}
       <section className="border-b border-border bg-background">
         <div className="container py-12">
@@ -745,7 +777,7 @@ const Index = () => {
               const gkCount = cPlayers.filter(
                 (p) => p.position === "GK",
               ).length;
-              const isComplete = count >= 2 && gkCount >= 2;
+              const isComplete = count >= 2 && gkCount >= 1;
 
               return (
                 <Link
