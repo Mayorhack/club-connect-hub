@@ -10,8 +10,6 @@ import {
   Player,
   Position,
   POSITION_NAME,
-  POSITION_GROUP,
-  PositionGroup,
   createPlayer,
   deletePlayer,
   updateClub,
@@ -33,18 +31,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Plus,
-  Trash2,
-  AlertCircle,
-  CheckCircle2,
-  Footprints,
-  Upload,
-  Ruler,
-  Weight,
-} from "lucide-react";
+import { Plus, Trash2, AlertCircle, CheckCircle2, Upload } from "lucide-react";
 import { getPlayerRegistrationDeadlineStatus } from "@/lib/registrationDeadline";
 import { toast } from "sonner";
+import { PlayerCard } from "@/components/PlayerCard";
 
 const FEET: Foot[] = ["right", "left", "both"];
 
@@ -60,22 +50,6 @@ const emptyForm = {
   heightCm: "" as string,
   weightKg: "" as string,
 };
-
-const groupLabel: Record<PositionGroup, string> = {
-  GK: "Goalkeeper",
-  DEF: "Defender",
-  MID: "Midfielder",
-  FWD: "Forward",
-};
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
 
 export default function MyClub() {
   const { user } = useAuth();
@@ -438,90 +412,20 @@ export default function MyClub() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {players.map((p, i) => {
-                const fullName = `${p.firstName} ${p.lastName}`.trim();
-                const group = POSITION_GROUP[p.position];
                 return (
                   <div
                     key={p.id}
-                    className="group relative rounded-xl border border-border bg-card p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[var(--shadow-card)] animate-fade-in"
+                    className="group relative animate-fade-in"
                     style={{ animationDelay: `${i * 40}ms` }}
                   >
+                    <PlayerCard player={p} />
                     <button
                       onClick={() => removePlayer(p.id)}
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                       aria-label="Remove"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
-                    <div className="flex items-start gap-3">
-                      <div className="relative h-12 w-12 shrink-0 rounded-full bg-secondary overflow-hidden flex items-center justify-center text-sm font-semibold text-secondary-foreground">
-                        {p.photoUrl ? (
-                          <img
-                            src={p.photoUrl}
-                            alt={fullName}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          initials(fullName)
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
-                            #{p.jerseyNumber}
-                          </span>
-                          <span className="font-medium leading-tight truncate">
-                            {fullName}
-                          </span>
-                        </div>
-                        <div className="mt-0.5 text-xs text-muted-foreground truncate">
-                          {POSITION_NAME[p.position]}{" "}
-                          <span className="opacity-50">
-                            · {groupLabel[group]}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                      {p.heightCm != null && (
-                        <span className="inline-flex items-center gap-1">
-                          <Ruler className="h-3 w-3" />
-                          {p.heightCm} cm
-                        </span>
-                      )}
-                      {p.weightKg != null && (
-                        <span className="inline-flex items-center gap-1">
-                          <Weight className="h-3 w-3" />
-                          {p.weightKg} kg
-                        </span>
-                      )}
-                      {p.preferredFoot && (
-                        <span className="inline-flex items-center gap-1 capitalize">
-                          <Footprints className="h-3 w-3" />
-                          {p.preferredFoot}
-                        </span>
-                      )}
-                    </div>
-                    {(p.mapGroup || p.churchUnit) && (
-                      <div className="mt-3 pt-3 border-t border-border text-[11px] text-muted-foreground space-y-0.5">
-                        {p.mapGroup && (
-                          <div>
-                            <span className="text-foreground/80">
-                              Map group:
-                            </span>{" "}
-                            {p.mapGroup}
-                          </div>
-                        )}
-                        {p.churchUnit && (
-                          <div>
-                            <span className="text-foreground/80">
-                              Church unit:
-                            </span>{" "}
-                            {p.churchUnit}
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 );
               })}
