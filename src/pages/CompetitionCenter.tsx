@@ -3,11 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import {
   buildLeagueTable,
-  buildTopScorers,
   getClubs,
   getFixtures,
   getMatchGoals,
-  getPlayers,
+  getTopScorers,
 } from "@/lib/storage";
 import { CalendarDays, Trophy } from "lucide-react";
 
@@ -28,22 +27,18 @@ export default function CompetitionCenter() {
     queryKey: ["fixtures"],
     queryFn: getFixtures,
   });
+  const { data: topScorers = [] } = useQuery({
+    queryKey: ["top_scorers"],
+    queryFn: getTopScorers,
+  });
   const { data: goals = [], isLoading: loadingGoals } = useQuery({
     queryKey: ["match-goals"],
     queryFn: getMatchGoals,
-  });
-  const { data: players = [], isLoading: loadingPlayers } = useQuery({
-    queryKey: ["players"],
-    queryFn: getPlayers,
   });
 
   const clubMap = useMemo(
     () => new Map(clubs.map((club) => [club.id, club])),
     [clubs],
-  );
-  const playerMap = useMemo(
-    () => new Map(players.map((player) => [player.id, player])),
-    [players],
   );
 
   const groupedFixtures = useMemo(() => {
@@ -67,10 +62,7 @@ export default function CompetitionCenter() {
     () => buildLeagueTable(clubs, fixtures),
     [clubs, fixtures],
   );
-  const topScorers = useMemo(
-    () => buildTopScorers(goals).slice(0, 10),
-    [goals],
-  );
+
   const rankedTable = useMemo(() => {
     return [...table].sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
@@ -109,7 +101,7 @@ export default function CompetitionCenter() {
         ]
       : ["TBD", "TBD"];
 
-  if (loadingClubs || loadingFixtures || loadingGoals || loadingPlayers) {
+  if (loadingClubs || loadingFixtures || loadingGoals) {
     return (
       <Layout>
         <div className="container py-20 text-center text-muted-foreground">
@@ -344,22 +336,20 @@ export default function CompetitionCenter() {
             ) : (
               <div className="space-y-2">
                 {topScorers.map((entry, idx) => {
-                  const player = playerMap.get(entry.playerId);
-                  const club = player ? clubMap.get(player.clubId) : undefined;
                   return (
                     <div
-                      key={entry.playerId}
+                      key={entry.id}
                       className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3"
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate">
                           {idx + 1}.{" "}
-                          {player
-                            ? `${player.firstName} ${player.lastName}`
+                          {entry.firstName && entry.lastName
+                            ? `${entry.firstName} ${entry.lastName}`
                             : "Unknown player"}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {club?.name ?? "Unknown club"}
+                          {entry?.clubName ?? "Unknown club"}
                         </p>
                       </div>
                       <span className="rounded-md bg-muted px-2 py-0.5 text-sm font-semibold">

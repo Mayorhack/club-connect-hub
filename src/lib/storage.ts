@@ -94,6 +94,7 @@ export interface Club {
   city: string;
   state?: string;
   cciBranch?: string;
+  playerCount?: number;
   foundedYear: number;
   logoUrl?: string;
   adminId?: string;
@@ -114,6 +115,19 @@ export interface Player {
   heightCm?: number;
   /** Weight in kilograms */
   weightKg?: number;
+}
+export interface TopScorers {
+  id: string;
+  firstName: string;
+  lastName: string;
+  photoUrl: string;
+  position: string;
+  jerseyNumber: number;
+  heightCm: number;
+  weightKg: number;
+  preferredFoot: string;
+  goals: number;
+  clubName: string;
 }
 
 export interface MatchFixture {
@@ -146,11 +160,20 @@ export interface LeagueTableRow {
   goalDifference: number;
   points: number;
 }
-
-export interface TopScorerRow {
-  playerId: string;
-  goals: number;
-}
+type TopScorerRow = {
+  player_id: string;
+  first_name: string;
+  last_name: string;
+  photo_url: string | null;
+  position: string | null;
+  jersey_number: number;
+  height_cm: number | null;
+  weight_kg: number | null;
+  preferred_foot: string | null;
+  club_id: string | null;
+  club_name: string | null;
+  total_goals: number;
+};
 
 // ── Row types (Supabase returns snake_case) ───────────────────────────────────
 
@@ -169,6 +192,7 @@ interface ClubRow {
   founded_year: number;
   logo_url: string | null;
   admin_id: string | null;
+  players?: { count: number }[];
 }
 interface PlayerRow {
   id: string;
@@ -251,6 +275,24 @@ function rowToClub(r: ClubRow): Club {
     foundedYear: r.founded_year,
     logoUrl: r.logo_url ?? undefined,
     adminId: r.admin_id ?? undefined,
+    playerCount: r.players?.[0]?.count ?? 0,
+  };
+}
+function rowToTopScorer(r: TopScorerRow): TopScorers {
+  return {
+    id: r.player_id,
+    firstName: r.first_name,
+    lastName: r.last_name,
+    photoUrl: r.photo_url ?? undefined,
+    position: r.position ?? undefined,
+    jerseyNumber: r.jersey_number,
+    heightCm: r.height_cm ?? undefined,
+    weightKg: r.weight_kg ?? undefined,
+    preferredFoot: r.preferred_foot ?? undefined,
+
+    clubName: r.club_name,
+
+    goals: r.total_goals,
   };
 }
 function rowToPlayer(r: PlayerRow): Player {
@@ -307,7 +349,7 @@ export async function getUsers(): Promise<User[]> {
 export async function getClubs(): Promise<Club[]> {
   const { data, error } = await supabase
     .from("clubs")
-    .select("*")
+    .select("*, players(count)")
     .order("name");
   if (error) throw error;
   return ((data ?? []) as ClubRow[]).map(rowToClub);
@@ -342,7 +384,30 @@ export async function getFixtures(): Promise<MatchFixture[]> {
   }
   return ((data ?? []) as MatchFixtureRow[]).map(rowToFixture);
 }
+export async function getTopScorers() {
+  const { data, error } = await supabase.rpc("get_top_scorers", {
+    limit_count: 15,
+  });
 
+  if (error) {
+    if (isMissingTableError(error, "top_scorers")) return [];
+    throw error;
+  }
+  return (data?.map(rowToTopScorer) ?? []) as unknown as TopScorers[];
+}
+export async function getTotals(): Promise<{
+  totalClubs: number;
+  totalPlayers: number;
+}> {
+  const [{ count: totalClubs }, { count: totalPlayers }] = await Promise.all([
+    supabase.from("clubs").select("*", { count: "exact", head: true }),
+    supabase.from("players").select("*", { count: "exact", head: true }),
+  ]);
+  return {
+    totalClubs: totalClubs ?? 0,
+    totalPlayers: totalPlayers ?? 0,
+  };
+}
 export async function getMatchGoals(): Promise<MatchGoal[]> {
   const { data, error } = await supabase
     .from("match_goals")
@@ -615,19 +680,5 @@ export function buildLeagueTable(
       const bName = clubNameMap.get(b.clubId) ?? "";
       if (aName !== bName) return aName.localeCompare(bName);
       return a.clubId.localeCompare(b.clubId);
-    });
-}
-
-export function buildTopScorers(goals: MatchGoal[]): TopScorerRow[] {
-  const totals = new Map<string, number>();
-  goals.forEach((entry) => {
-    totals.set(entry.playerId, (totals.get(entry.playerId) ?? 0) + entry.goals);
-  });
-
-  return Array.from(totals.entries())
-    .map(([playerId, scored]) => ({ playerId, goals: scored }))
-    .sort((a, b) => {
-      if (b.goals !== a.goals) return b.goals - a.goals;
-      return a.playerId.localeCompare(b.playerId);
     });
 }

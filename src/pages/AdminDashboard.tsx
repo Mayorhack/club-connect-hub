@@ -35,7 +35,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Upload, X } from "lucide-react";
+import { ChevronDown, Plus, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 function badgeVariant(role: string) {
@@ -74,6 +74,7 @@ export default function AdminDashboard() {
 
   const [open, setOpen] = useState(false);
   const [fixtureOpen, setFixtureOpen] = useState(false);
+  const [openMatchdays, setOpenMatchdays] = useState<number[]>([]);
   const [scorersFixtureId, setScorersFixtureId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
@@ -124,6 +125,28 @@ export default function AdminDashboard() {
     if (a.matchday !== b.matchday) return a.matchday - b.matchday;
     return a.kickoffDate.localeCompare(b.kickoffDate);
   });
+
+  const fixturesByMatchday = sortedFixtures.reduce<
+    Array<{ matchday: number; fixtures: typeof sortedFixtures }>
+  >((groups, fixture) => {
+    const existing = groups.find(
+      (group) => group.matchday === fixture.matchday,
+    );
+    if (existing) {
+      existing.fixtures.push(fixture);
+      return groups;
+    }
+    groups.push({ matchday: fixture.matchday, fixtures: [fixture] });
+    return groups;
+  }, []);
+
+  function toggleMatchday(matchday: number) {
+    setOpenMatchdays((prev) =>
+      prev.includes(matchday)
+        ? prev.filter((value) => value !== matchday)
+        : [...prev, matchday],
+    );
+  }
 
   async function handleCreateClub(e: FormEvent) {
     e.preventDefault();
@@ -672,120 +695,187 @@ export default function AdminDashboard() {
           </div>
 
           <div className="space-y-3">
-            {sortedFixtures.map((fixture) => {
-              const home = clubs.find((club) => club.id === fixture.homeClubId);
-              const away = clubs.find((club) => club.id === fixture.awayClubId);
+            {fixturesByMatchday.map(
+              ({ matchday, fixtures: matchdayFixtures }) => {
+                const isOpen = openMatchdays.includes(matchday);
 
-              return (
-                <div
-                  key={fixture.id}
-                  className="rounded-xl border border-border bg-card p-4 space-y-3"
-                >
-                  <form
-                    className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      void handleSaveFixtureMeta(
-                        fixture.id,
-                        new FormData(e.currentTarget),
-                      );
-                    }}
+                return (
+                  <div
+                    key={`matchday-${matchday}`}
+                    className="rounded-xl border border-border bg-card"
                   >
-                    <div>
-                      <Label>Matchday</Label>
-                      <Input
-                        name="matchday"
-                        type="number"
-                        min={1}
-                        defaultValue={fixture.matchday}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label>Date</Label>
-                      <Input
-                        name="kickoffDate"
-                        type="date"
-                        defaultValue={fixture.kickoffDate}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label>Venue</Label>
-                      <Input name="venue" defaultValue={fixture.venue ?? ""} />
-                    </div>
-                    <div className="flex items-end">
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        variant="secondary"
-                      >
-                        Save fixture
-                      </Button>
-                    </div>
-                  </form>
-
-                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {home?.name ?? "Unknown"} vs {away?.name ?? "Unknown"}
-                      </p>
-                    </div>
-
-                    <form
-                      className="flex items-center gap-2"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const fd = new FormData(e.currentTarget);
-                        void handleSaveFixtureResult(
-                          fixture.id,
-                          readFormString(fd, "homeScore"),
-                          readFormString(fd, "awayScore"),
-                        );
-                      }}
+                    <button
+                      type="button"
+                      onClick={() => toggleMatchday(matchday)}
+                      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-muted/30 transition-colors"
                     >
-                      <Input
-                        name="homeScore"
-                        type="number"
-                        min={0}
-                        className="w-16"
-                        defaultValue={fixture.homeScore ?? 0}
+                      <div>
+                        <p className="text-sm font-semibold">
+                          Matchday {matchday}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {matchdayFixtures.length} fixture
+                          {matchdayFixtures.length === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                      <ChevronDown
+                        className={`h-4 w-4 text-muted-foreground transition-transform ${
+                          isOpen ? "rotate-180" : ""
+                        }`}
                       />
-                      <span className="text-sm text-muted-foreground">-</span>
-                      <Input
-                        name="awayScore"
-                        type="number"
-                        min={0}
-                        className="w-16"
-                        defaultValue={fixture.awayScore ?? 0}
-                      />
-                      <Button type="submit" size="sm" variant="outline">
-                        Save result
-                      </Button>
-                    </form>
+                    </button>
 
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setScorersFixtureId(fixture.id)}
-                      >
-                        Scorers
-                      </Button>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => void handleDeleteFixture(fixture.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    {isOpen && (
+                      <div className="border-t border-border p-4 space-y-4">
+                        <div className="rounded-lg border border-dashed border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+                          <p className="font-medium text-foreground">
+                            How to save this matchday:
+                          </p>
+                          <p className="mt-1">
+                            1) Update fixture details and click Save fixture, 2)
+                            Enter scores and click Save result, 3) Open Scorers
+                            to record player goals.
+                          </p>
+                        </div>
+
+                        {matchdayFixtures.map((fixture) => {
+                          const home = clubs.find(
+                            (club) => club.id === fixture.homeClubId,
+                          );
+                          const away = clubs.find(
+                            (club) => club.id === fixture.awayClubId,
+                          );
+
+                          return (
+                            <div
+                              key={fixture.id}
+                              className="rounded-xl border border-border bg-background p-4 space-y-3"
+                            >
+                              <form
+                                className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  void handleSaveFixtureMeta(
+                                    fixture.id,
+                                    new FormData(e.currentTarget),
+                                  );
+                                }}
+                              >
+                                <div>
+                                  <Label>Matchday</Label>
+                                  <Input
+                                    name="matchday"
+                                    type="number"
+                                    min={1}
+                                    defaultValue={fixture.matchday}
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <Label>Date</Label>
+                                  <Input
+                                    name="kickoffDate"
+                                    type="date"
+                                    defaultValue={fixture.kickoffDate}
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <Label>Venue</Label>
+                                  <Input
+                                    name="venue"
+                                    defaultValue={fixture.venue ?? ""}
+                                  />
+                                </div>
+                                <div className="flex items-end">
+                                  <Button
+                                    type="submit"
+                                    className="w-full"
+                                    variant="secondary"
+                                  >
+                                    Save fixture
+                                  </Button>
+                                </div>
+                              </form>
+
+                              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between rounded-lg border border-border bg-card px-3 py-2">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">
+                                    {home?.name ?? "Unknown"} vs{" "}
+                                    {away?.name ?? "Unknown"}
+                                  </p>
+                                </div>
+
+                                <form
+                                  className="flex items-center gap-2"
+                                  onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const fd = new FormData(e.currentTarget);
+                                    void handleSaveFixtureResult(
+                                      fixture.id,
+                                      readFormString(fd, "homeScore"),
+                                      readFormString(fd, "awayScore"),
+                                    );
+                                  }}
+                                >
+                                  <Input
+                                    name="homeScore"
+                                    type="number"
+                                    min={0}
+                                    className="w-16"
+                                    defaultValue={fixture.homeScore ?? 0}
+                                  />
+                                  <span className="text-sm text-muted-foreground">
+                                    -
+                                  </span>
+                                  <Input
+                                    name="awayScore"
+                                    type="number"
+                                    min={0}
+                                    className="w-16"
+                                    defaultValue={fixture.awayScore ?? 0}
+                                  />
+                                  <Button
+                                    type="submit"
+                                    size="sm"
+                                    variant="outline"
+                                  >
+                                    Save result
+                                  </Button>
+                                </form>
+
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      setScorersFixtureId(fixture.id)
+                                    }
+                                  >
+                                    Scorers
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      void handleDeleteFixture(fixture.id)
+                                    }
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                </div>
-              );
-            })}
+                );
+              },
+            )}
 
             {sortedFixtures.length === 0 && (
               <p className="text-sm text-muted-foreground">

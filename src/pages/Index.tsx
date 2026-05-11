@@ -3,15 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import {
-  buildTopScorers,
   getClubs,
   getFixtures,
-  getMatchGoals,
-  getPlayers,
   type MatchFixture,
-  playersByClub,
   type Club,
-  type Player,
+  getTopScorers,
+  TopScorers,
+  Position,
+  getTotals,
 } from "@/lib/storage";
 import {
   Trophy,
@@ -190,11 +189,7 @@ function useRevealContainer() {
 }
 
 // ── Player spotlight card ────────────────────────────────────────────────────
-function PlayerSpotlight({
-  player,
-  club,
-  goals,
-}: Readonly<{ player: Player; club: Club | undefined; goals: number }>) {
+function PlayerSpotlight({ player }: Readonly<{ player: TopScorers }>) {
   const fullName = `${player.firstName} ${player.lastName}`.trim();
   const initials = fullName
     .split(" ")
@@ -220,19 +215,19 @@ function PlayerSpotlight({
           {fullName}
         </div>
         <div className="mt-1 flex items-center gap-2 flex-wrap">
-          <PositionBadge position={player.position} />
+          <PositionBadge position={player.position as unknown as Position} />
           <span className="text-xs text-muted-foreground">
             #{player.jerseyNumber}
           </span>
         </div>
-        {club && (
+        {player.clubName && (
           <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
             <Trophy className="h-3 w-3 shrink-0" />
-            <span className="truncate">{club.name}</span>
+            <span className="truncate">{player.clubName}</span>
           </div>
         )}
         <div className="mt-2 inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[11px] font-semibold">
-          {goals} goal{goals === 1 ? "" : "s"}
+          {player.goals} goal{player.goals === 1 ? "" : "s"}
         </div>
         <div className="mt-2 flex gap-3 text-[11px] text-muted-foreground">
           {!!player.heightCm && <span>{player.heightCm} cm</span>}
@@ -253,7 +248,7 @@ function PlayerSpotlight({
 // ── Hero Carousel Component ──────────────────────────────────────────────────
 function HeroCarousel({
   slides,
-  clubs,
+  clubsCount,
   totalPlayers,
 }: Readonly<{
   slides: Array<{
@@ -263,7 +258,7 @@ function HeroCarousel({
     cta1: { text: string; href: string };
     cta2: { text: string; href: string };
   }>;
-  clubs: Club[];
+  clubsCount: number;
   totalPlayers: number;
 }>) {
   const { idx, prev, next, setIdx } = useSlider(slides.length);
@@ -322,7 +317,7 @@ function HeroCarousel({
           <div className="mt-12 hidden sm:flex flex-wrap gap-8 anim-fade-up anim-delay-500">
             <div>
               <div className="text-3xl font-extrabold text-white">
-                {clubs.length}
+                {clubsCount}
               </div>
               <div className="text-xs text-white/70 mt-1 uppercase tracking-wide">
                 Clubs
@@ -534,35 +529,24 @@ const Index = () => {
     queryKey: ["clubs"],
     queryFn: getClubs,
   });
-  const { data: allPlayers = [] } = useQuery({
-    queryKey: ["players"],
-    queryFn: getPlayers,
+
+  const { data: topScorers = [] } = useQuery({
+    queryKey: ["top_scorers"],
+    queryFn: getTopScorers,
   });
   const { data: fixtures = [] } = useQuery({
     queryKey: ["fixtures"],
     queryFn: getFixtures,
   });
-  const { data: matchGoals = [] } = useQuery({
-    queryKey: ["match-goals"],
-    queryFn: getMatchGoals,
+  const { data: totals = { totalClubs: 0, totalPlayers: 0 } } = useQuery({
+    queryKey: ["totals"],
+    queryFn: getTotals,
   });
-  const totalPlayers = allPlayers.length;
 
   const clubMap = Object.fromEntries(clubs.map((c) => [c.id, c]));
   const featuresContainerRef = useRevealContainer();
 
-  const topScorerRows = buildTopScorers(matchGoals);
-  const goalsByPlayerId = Object.fromEntries(
-    topScorerRows.map((row) => [row.playerId, row.goals]),
-  );
-  const playerById = Object.fromEntries(
-    allPlayers.map((player) => [player.id, player]),
-  );
-
-  const spotlightPlayers = topScorerRows
-    .map((row) => playerById[row.playerId])
-    .filter((player): player is Player => Boolean(player))
-    .slice(0, 9);
+  const spotlightPlayers = topScorers;
 
   const goalsByClubId = fixtures.reduce<Record<string, number>>(
     (acc, fixture) => {
@@ -605,8 +589,8 @@ const Index = () => {
       <section className="relative overflow-hidden border-b border-border bg-black">
         <HeroCarousel
           slides={HERO_SLIDES}
-          clubs={clubs}
-          totalPlayers={totalPlayers}
+          clubsCount={totals.totalClubs}
+          totalPlayers={totals.totalPlayers}
         />
       </section>
 
@@ -718,13 +702,7 @@ const Index = () => {
             subtitle="Top goal scorers across all clubs this season"
             icon={Flame}
             visibleCount={3}
-            renderSlide={(player) => (
-              <PlayerSpotlight
-                player={player}
-                club={clubMap[player.clubId]}
-                goals={goalsByPlayerId[player.id] ?? 0}
-              />
-            )}
+            renderSlide={(player) => <PlayerSpotlight player={player} />}
           />
         </div>
       )}
@@ -741,7 +719,7 @@ const Index = () => {
             renderSlide={(club) => (
               <ClubSpotlight
                 club={club}
-                playerCount={playersByClub(allPlayers, club.id).length}
+                playerCount={club.playerCount ?? 0}
                 goalsScored={goalsByClubId[club.id] ?? 0}
               />
             )}
@@ -755,13 +733,13 @@ const Index = () => {
           <div>
             <h2 className="text-2xl font-bold">Registered Clubs</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {clubs.length} club{clubs.length === 1 ? "" : "s"} ·{" "}
-              {totalPlayers} players total
+              {totals?.totalClubs} club{totals?.totalClubs === 1 ? "" : "s"} ·{" "}
+              {totals?.totalPlayers} players total
             </p>
           </div>
         </div>
 
-        {clubs.length === 0 ? (
+        {totals?.totalClubs === 0 ? (
           <div className="rounded-xl border border-dashed border-border p-16 text-center">
             <Trophy className="mx-auto h-10 w-10 text-muted-foreground/40 mb-3" />
             <p className="text-muted-foreground font-medium">No clubs yet.</p>
@@ -772,12 +750,7 @@ const Index = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {clubs.map((c, i) => {
-              const cPlayers = playersByClub(allPlayers, c.id);
-              const count = cPlayers.length;
-              const gkCount = cPlayers.filter(
-                (p) => p.position === "GK",
-              ).length;
-              const isComplete = count >= 2 && gkCount >= 1;
+              const isComplete = c.playerCount >= 11;
 
               return (
                 <Link
@@ -821,14 +794,14 @@ const Index = () => {
                     <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1">
-                          <Users className="h-3.5 w-3.5" /> {count} / 25
+                          <Users className="h-3.5 w-3.5" /> {c.playerCount} / 25
                         </span>
                         <span className="flex items-center gap-1">
                           <CalendarDays className="h-3.5 w-3.5" />{" "}
                           {c.foundedYear}
                         </span>
                       </div>
-                      {!isComplete && count > 0 && (
+                      {!isComplete && c.playerCount > 0 && (
                         <span className="rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 text-[10px] font-semibold">
                           Incomplete
                         </span>
@@ -840,7 +813,7 @@ const Index = () => {
                         <div
                           className="h-full rounded-full transition-all"
                           style={{
-                            width: `${Math.min((count / 25) * 100, 100)}%`,
+                            width: `${Math.min((c.playerCount / 25) * 100, 100)}%`,
                             background: "var(--gradient-pitch)",
                           }}
                         />
