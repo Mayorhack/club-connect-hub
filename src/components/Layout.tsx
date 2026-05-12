@@ -5,6 +5,7 @@ import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import { Trophy, LogOut, Moon, Sun, Menu, X } from "lucide-react";
 import { type User } from "@/lib/storage";
+import Logo from "./logo";
 
 function navLinkClass(isActive: boolean, transparent: boolean) {
   const base = "px-3 py-2 text-sm rounded-md transition-colors";
@@ -221,13 +222,7 @@ export function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
             to="/"
             className={`flex items-center gap-2 font-bold text-lg ${transparent ? "text-white" : ""}`}
           >
-            <span
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg"
-              style={{ background: "var(--gradient-pitch)" }}
-            >
-              <Trophy className="h-5 w-5 text-primary-foreground" />
-            </span>
-            <span className="tracking-tight">PIE Cup</span>
+            <Logo />
           </Link>
 
           <DesktopNav

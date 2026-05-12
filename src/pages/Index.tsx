@@ -13,7 +13,6 @@ import {
   getTotals,
 } from "@/lib/storage";
 import {
-  Trophy,
   Users,
   Shield,
   Star,
@@ -29,6 +28,7 @@ import lakeside2 from "@/assets/lakeside2.jpeg";
 import lakeside3 from "@/assets/lakeside3.jpeg";
 import lakeside4 from "@/assets/lakeside4.jpeg";
 import lakeside from "@/assets/lakeside.jpg";
+import Logo from "@/components/logo";
 
 const HERO_SLIDES = [
   {
@@ -222,7 +222,7 @@ function PlayerSpotlight({ player }: Readonly<{ player: TopScorers }>) {
         </div>
         {player.clubName && (
           <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-            <Trophy className="h-3 w-3 shrink-0" />
+            <Logo />
             <span className="truncate">{player.clubName}</span>
           </div>
         )}
@@ -395,10 +395,7 @@ function ClubSpotlight({
       className="group block rounded-2xl overflow-hidden border border-border bg-gradient-to-br from-card to-muted hover:border-primary/30 hover:shadow-[var(--shadow-card)] transition-all duration-300 p-5 h-full"
     >
       <div className="flex items-center gap-4">
-        <div
-          className="h-14 w-14 shrink-0 rounded-xl flex items-center justify-center shadow"
-          style={{ background: "var(--gradient-pitch)" }}
-        >
+        <div className="h-14 w-14 shrink-0 rounded-xl flex items-center justify-center shadow">
           {club.logoUrl ? (
             <img
               src={club.logoUrl}
@@ -406,7 +403,7 @@ function ClubSpotlight({
               className="h-full w-full object-cover rounded-xl"
             />
           ) : (
-            <Trophy className="h-7 w-7 text-primary-foreground" />
+            <Logo />
           )}
         </div>
         <div className="min-w-0 flex-1">
@@ -607,10 +604,7 @@ const Index = () => {
                 className="flex gap-4 reveal"
                 style={{ transitionDelay: `${i * 150}ms` }}
               >
-                <div
-                  className="shrink-0 h-10 w-10 rounded-lg flex items-center justify-center"
-                  style={{ background: "var(--gradient-pitch)" }}
-                >
+                <div className="shrink-0 h-10 w-10 rounded-lg flex items-center justify-center">
                   <Icon className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <div>
@@ -714,7 +708,7 @@ const Index = () => {
             items={teamWatchClubs}
             title="Teams to Watch"
             subtitle="Clubs with the highest goals scored"
-            icon={Trophy}
+            icon={Logo}
             visibleCount={3}
             renderSlide={(club) => (
               <ClubSpotlight
@@ -741,7 +735,7 @@ const Index = () => {
 
         {totals?.totalClubs === 0 ? (
           <div className="rounded-xl border border-dashed border-border p-16 text-center">
-            <Trophy className="mx-auto h-10 w-10 text-muted-foreground/40 mb-3" />
+            <Logo />
             <p className="text-muted-foreground font-medium">No clubs yet.</p>
             <p className="text-sm text-muted-foreground mt-1">
               A super admin can create the first one.
@@ -759,17 +753,11 @@ const Index = () => {
                   style={{ animationDelay: `${i * 70}ms` }}
                   className="group relative flex flex-col rounded-2xl border border-border bg-card overflow-hidden hover:shadow-[var(--shadow-card)] hover:border-primary/30 transition-all duration-300 hover:-translate-y-1 anim-fade-up"
                 >
-                  <div
-                    className="h-1.5 w-full"
-                    style={{ background: "var(--gradient-pitch)" }}
-                  />
+                  <div className="h-1.5 w-full" />
 
                   <div className="p-5 flex-1 flex flex-col">
                     <div className="flex items-center gap-4">
-                      <div
-                        className="h-14 w-14 shrink-0 rounded-xl flex items-center justify-center shadow-sm"
-                        style={{ background: "var(--gradient-pitch)" }}
-                      >
+                      <div className="h-14 w-14 shrink-0 rounded-xl flex items-center justify-center shadow-sm">
                         {c.logoUrl ? (
                           <img
                             src={c.logoUrl}
@@ -777,7 +765,7 @@ const Index = () => {
                             className="h-full w-full object-cover rounded-xl"
                           />
                         ) : (
-                          <Trophy className="h-7 w-7 text-primary-foreground" />
+                          <Logo />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">

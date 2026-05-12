@@ -8,6 +8,7 @@ import {
   PositionGroup,
 } from "@/lib/storage";
 import { PlayerCard } from "@/components/PlayerCard";
+import { CoachCard } from "@/components/CoachCard";
 import { ArrowLeft, AlertCircle, Trophy } from "lucide-react";
 
 const GROUPS: { key: PositionGroup; label: string }[] = [
@@ -100,6 +101,26 @@ export default function ClubPublic() {
       </section>
 
       <section className="container py-10 space-y-8">
+        <div>
+          <h2 className="text-lg font-bold mb-3">Technical crew</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <CoachCard
+              role="Coach"
+              name={club.coachName}
+              mapGroup={club.coachMapGroup}
+              serviceUnit={club.coachServiceUnit}
+              photoUrl={club.coachPhotoUrl}
+            />
+            <CoachCard
+              role="Assistant Coach"
+              name={club.assistantCoachName}
+              mapGroup={club.assistantCoachMapGroup}
+              serviceUnit={club.assistantCoachServiceUnit}
+              photoUrl={club.assistantCoachPhotoUrl}
+            />
+          </div>
+        </div>
+
         {gkCount < 1 && (
           <div className="flex items-start gap-3 rounded-lg border border-accent/40 bg-accent/10 p-4 text-sm">
             <AlertCircle className="h-5 w-5 text-accent shrink-0 mt-0.5" />

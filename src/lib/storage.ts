@@ -98,6 +98,14 @@ export interface Club {
   foundedYear: number;
   logoUrl?: string;
   adminId?: string;
+  coachName?: string;
+  coachMapGroup?: string;
+  coachServiceUnit?: string;
+  coachPhotoUrl?: string;
+  assistantCoachName?: string;
+  assistantCoachMapGroup?: string;
+  assistantCoachServiceUnit?: string;
+  assistantCoachPhotoUrl?: string;
 }
 
 export interface Player {
@@ -192,6 +200,14 @@ interface ClubRow {
   founded_year: number;
   logo_url: string | null;
   admin_id: string | null;
+  coach_name: string | null;
+  coach_map_group: string | null;
+  coach_service_unit: string | null;
+  coach_photo_url: string | null;
+  assistant_coach_name: string | null;
+  assistant_coach_map_group: string | null;
+  assistant_coach_service_unit: string | null;
+  assistant_coach_photo_url: string | null;
   players?: { count: number }[];
 }
 interface PlayerRow {
@@ -275,6 +291,14 @@ function rowToClub(r: ClubRow): Club {
     foundedYear: r.founded_year,
     logoUrl: r.logo_url ?? undefined,
     adminId: r.admin_id ?? undefined,
+    coachName: r.coach_name ?? undefined,
+    coachMapGroup: r.coach_map_group ?? undefined,
+    coachServiceUnit: r.coach_service_unit ?? undefined,
+    coachPhotoUrl: r.coach_photo_url ?? undefined,
+    assistantCoachName: r.assistant_coach_name ?? undefined,
+    assistantCoachMapGroup: r.assistant_coach_map_group ?? undefined,
+    assistantCoachServiceUnit: r.assistant_coach_service_unit ?? undefined,
+    assistantCoachPhotoUrl: r.assistant_coach_photo_url ?? undefined,
     playerCount: r.players?.[0]?.count ?? 0,
   };
 }
@@ -438,6 +462,14 @@ export async function createClub(club: Omit<Club, "id">): Promise<Club> {
       founded_year: club.foundedYear,
       logo_url: club.logoUrl ?? null,
       admin_id: club.adminId ?? null,
+      coach_name: club.coachName ?? null,
+      coach_map_group: club.coachMapGroup ?? null,
+      coach_service_unit: club.coachServiceUnit ?? null,
+      coach_photo_url: club.coachPhotoUrl ?? null,
+      assistant_coach_name: club.assistantCoachName ?? null,
+      assistant_coach_map_group: club.assistantCoachMapGroup ?? null,
+      assistant_coach_service_unit: club.assistantCoachServiceUnit ?? null,
+      assistant_coach_photo_url: club.assistantCoachPhotoUrl ?? null,
     })
     .select()
     .single();
@@ -450,14 +482,36 @@ export async function updateClub(
   updates: Partial<Omit<Club, "id">>,
 ): Promise<void> {
   const row: Record<string, unknown> = {};
-  if (updates.name !== undefined) row.name = updates.name;
-  if (updates.city !== undefined) row.city = updates.city;
-  if (updates.state !== undefined) row.state = updates.state ?? null;
-  if (updates.cciBranch !== undefined)
-    row.cci_branch = updates.cciBranch ?? null;
-  if (updates.foundedYear !== undefined) row.founded_year = updates.foundedYear;
-  if (updates.logoUrl !== undefined) row.logo_url = updates.logoUrl ?? null;
-  if (updates.adminId !== undefined) row.admin_id = updates.adminId ?? null;
+
+  const setValue = (
+    dbColumn: string,
+    value: unknown,
+    nullable: boolean = false,
+  ) => {
+    if (value === undefined) return;
+    row[dbColumn] = nullable ? (value ?? null) : value;
+  };
+
+  setValue("name", updates.name);
+  setValue("city", updates.city);
+  setValue("state", updates.state, true);
+  setValue("cci_branch", updates.cciBranch, true);
+  setValue("founded_year", updates.foundedYear);
+  setValue("logo_url", updates.logoUrl, true);
+  setValue("admin_id", updates.adminId, true);
+  setValue("coach_name", updates.coachName, true);
+  setValue("coach_map_group", updates.coachMapGroup, true);
+  setValue("coach_service_unit", updates.coachServiceUnit, true);
+  setValue("coach_photo_url", updates.coachPhotoUrl, true);
+  setValue("assistant_coach_name", updates.assistantCoachName, true);
+  setValue("assistant_coach_map_group", updates.assistantCoachMapGroup, true);
+  setValue(
+    "assistant_coach_service_unit",
+    updates.assistantCoachServiceUnit,
+    true,
+  );
+  setValue("assistant_coach_photo_url", updates.assistantCoachPhotoUrl, true);
+
   const { error } = await supabase.from("clubs").update(row).eq("id", id);
   if (error) throw error;
 }

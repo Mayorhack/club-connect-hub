@@ -77,6 +77,27 @@ export default function MyClub() {
     club?.foundedYear ?? new Date().getFullYear(),
   );
   const [editLogo, setEditLogo] = useState(club?.logoUrl ?? "");
+  const [editCoachName, setEditCoachName] = useState(club?.coachName ?? "");
+  const [editCoachMapGroup, setEditCoachMapGroup] = useState(
+    club?.coachMapGroup ?? "",
+  );
+  const [editCoachServiceUnit, setEditCoachServiceUnit] = useState(
+    club?.coachServiceUnit ?? "",
+  );
+  const [editCoachPhotoUrl, setEditCoachPhotoUrl] = useState(
+    club?.coachPhotoUrl ?? "",
+  );
+  const [editAssistantCoachName, setEditAssistantCoachName] = useState(
+    club?.assistantCoachName ?? "",
+  );
+  const [editAssistantCoachMapGroup, setEditAssistantCoachMapGroup] = useState(
+    club?.assistantCoachMapGroup ?? "",
+  );
+  const [editAssistantCoachServiceUnit, setEditAssistantCoachServiceUnit] =
+    useState(club?.assistantCoachServiceUnit ?? "");
+  const [editAssistantCoachPhotoUrl, setEditAssistantCoachPhotoUrl] = useState(
+    club?.assistantCoachPhotoUrl ?? "",
+  );
   const [savingClub, setSavingClub] = useState(false);
 
   useEffect(() => {
@@ -85,6 +106,14 @@ export default function MyClub() {
     setEditCity(club.city);
     setEditYear(club.foundedYear);
     setEditLogo(club.logoUrl ?? "");
+    setEditCoachName(club.coachName ?? "");
+    setEditCoachMapGroup(club.coachMapGroup ?? "");
+    setEditCoachServiceUnit(club.coachServiceUnit ?? "");
+    setEditCoachPhotoUrl(club.coachPhotoUrl ?? "");
+    setEditAssistantCoachName(club.assistantCoachName ?? "");
+    setEditAssistantCoachMapGroup(club.assistantCoachMapGroup ?? "");
+    setEditAssistantCoachServiceUnit(club.assistantCoachServiceUnit ?? "");
+    setEditAssistantCoachPhotoUrl(club.assistantCoachPhotoUrl ?? "");
   }, [club]);
 
   if (!club) {
@@ -108,6 +137,15 @@ export default function MyClub() {
       city: editCity.trim(),
       foundedYear: editYear,
       logoUrl: editLogo.trim() || undefined,
+      coachName: editCoachName.trim() || undefined,
+      coachMapGroup: editCoachMapGroup.trim() || undefined,
+      coachServiceUnit: editCoachServiceUnit.trim() || undefined,
+      coachPhotoUrl: editCoachPhotoUrl || undefined,
+      assistantCoachName: editAssistantCoachName.trim() || undefined,
+      assistantCoachMapGroup: editAssistantCoachMapGroup.trim() || undefined,
+      assistantCoachServiceUnit:
+        editAssistantCoachServiceUnit.trim() || undefined,
+      assistantCoachPhotoUrl: editAssistantCoachPhotoUrl || undefined,
     })
       .then(() => {
         toast.success("Club updated");
@@ -128,6 +166,29 @@ export default function MyClub() {
         ...f,
         photoUrl: typeof reader.result === "string" ? reader.result : undefined,
       }));
+    reader.readAsDataURL(file);
+  };
+
+  const handleCoachImage = (
+    e: ChangeEvent<HTMLInputElement>,
+    target: "coach" | "assistant",
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2MB");
+      e.target.value = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") return;
+      if (target === "coach") {
+        setEditCoachPhotoUrl(reader.result);
+      } else {
+        setEditAssistantCoachPhotoUrl(reader.result);
+      }
+    };
     reader.readAsDataURL(file);
   };
 
@@ -468,6 +529,106 @@ export default function MyClub() {
                 onChange={(e) => setEditLogo(e.target.value)}
                 placeholder="https://..."
               />
+            </div>
+            <div className="sm:col-span-2 border-t border-border pt-4">
+              <h3 className="font-semibold">Coach details</h3>
+            </div>
+            <div>
+              <Label>Coach name</Label>
+              <Input
+                value={editCoachName}
+                onChange={(e) => setEditCoachName(e.target.value)}
+                placeholder="Head coach name"
+              />
+            </div>
+            <div>
+              <Label>Coach map</Label>
+              <Input
+                value={editCoachMapGroup}
+                onChange={(e) => setEditCoachMapGroup(e.target.value)}
+                placeholder="e.g. MAP 4"
+              />
+            </div>
+            <div>
+              <Label>Coach service unit</Label>
+              <Input
+                value={editCoachServiceUnit}
+                onChange={(e) => setEditCoachServiceUnit(e.target.value)}
+                placeholder="e.g. Ushering"
+              />
+            </div>
+            <div>
+              <Label>Coach photo</Label>
+              <div className="flex items-center gap-3 mt-1">
+                <div className="h-14 w-14 rounded-full bg-secondary overflow-hidden flex items-center justify-center text-xs text-muted-foreground border border-border">
+                  {editCoachPhotoUrl ? (
+                    <img
+                      src={editCoachPhotoUrl}
+                      alt="coach preview"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Upload className="h-5 w-5" />
+                  )}
+                </div>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleCoachImage(e, "coach")}
+                  className="cursor-pointer"
+                />
+              </div>
+            </div>
+            <div className="sm:col-span-2 border-t border-border pt-4">
+              <h3 className="font-semibold">Assistant coach details</h3>
+            </div>
+            <div>
+              <Label>Assistant coach name</Label>
+              <Input
+                value={editAssistantCoachName}
+                onChange={(e) => setEditAssistantCoachName(e.target.value)}
+                placeholder="Assistant coach name"
+              />
+            </div>
+            <div>
+              <Label>Assistant coach map</Label>
+              <Input
+                value={editAssistantCoachMapGroup}
+                onChange={(e) => setEditAssistantCoachMapGroup(e.target.value)}
+                placeholder="e.g. MAP 2"
+              />
+            </div>
+            <div>
+              <Label>Assistant coach service unit</Label>
+              <Input
+                value={editAssistantCoachServiceUnit}
+                onChange={(e) =>
+                  setEditAssistantCoachServiceUnit(e.target.value)
+                }
+                placeholder="e.g. Media"
+              />
+            </div>
+            <div>
+              <Label>Assistant coach photo</Label>
+              <div className="flex items-center gap-3 mt-1">
+                <div className="h-14 w-14 rounded-full bg-secondary overflow-hidden flex items-center justify-center text-xs text-muted-foreground border border-border">
+                  {editAssistantCoachPhotoUrl ? (
+                    <img
+                      src={editAssistantCoachPhotoUrl}
+                      alt="assistant coach preview"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Upload className="h-5 w-5" />
+                  )}
+                </div>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleCoachImage(e, "assistant")}
+                  className="cursor-pointer"
+                />
+              </div>
             </div>
             <div className="sm:col-span-2">
               <Button
