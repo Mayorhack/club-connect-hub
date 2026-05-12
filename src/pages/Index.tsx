@@ -339,6 +339,12 @@ function HeroCarousel({
                 Positions
               </div>
             </div>
+            <div>
+              <div className="text-3xl font-extrabold text-white">11</div>
+              <div className="text-xs text-white/70 mt-1 uppercase tracking-wide">
+                Matches
+              </div>
+            </div>
           </div>
         </div>
       </div>
