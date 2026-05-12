@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
-import { Trophy, LogOut, Moon, Sun, Menu, X } from "lucide-react";
+import { LogOut, Moon, Sun, Menu, X } from "lucide-react";
 import { type User } from "@/lib/storage";
 import Logo from "./logo";
 
@@ -217,7 +217,7 @@ export function Layout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className={headerClass}>
-        <div className="container flex items-center justify-between h-16">
+        <div className="container flex items-center justify-between h-20">
           <Link
             to="/"
             className={`flex items-center gap-2 font-bold text-lg ${transparent ? "text-white" : ""}`}
