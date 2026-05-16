@@ -295,175 +295,186 @@ export default function MyClub() {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Squad</h2>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button disabled={squadFull}>
-                  <Plus className="h-4 w-4 mr-1" /> Add player
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Add player</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={addPlayer} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label>First name</Label>
-                      <Input
-                        value={form.firstName}
-                        onChange={(e) =>
-                          setForm({ ...form, firstName: e.target.value })
-                        }
-                        required
-                      />
+            {deadline.isClosed ? (
+              <p className="text-sm text-red-600 font-medium">
+                Deadline breached. Please reach out to the admin to pay your
+                fine of ₦25,000.
+              </p>
+            ) : (
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button disabled={squadFull}>
+                    <Plus className="h-4 w-4 mr-1" /> Add player
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Add player</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={addPlayer} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>First name</Label>
+                        <Input
+                          value={form.firstName}
+                          onChange={(e) =>
+                            setForm({ ...form, firstName: e.target.value })
+                          }
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label>Last name</Label>
+                        <Input
+                          value={form.lastName}
+                          onChange={(e) =>
+                            setForm({ ...form, lastName: e.target.value })
+                          }
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>Player number</Label>
+                        <Input
+                          type="number"
+                          value={form.jerseyNumber}
+                          min={1}
+                          max={99}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              jerseyNumber: Number(e.target.value),
+                            })
+                          }
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label>Position</Label>
+                        <Select
+                          value={form.position}
+                          onValueChange={(v) =>
+                            setForm({ ...form, position: v as Position })
+                          }
+                          required
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-72">
+                            {ALL_POSITIONS.map((p) => (
+                              <SelectItem key={p} value={p}>
+                                {POSITION_NAME[p]} ({p})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>Height (cm)</Label>
+                        <Input
+                          type="number"
+                          min={100}
+                          max={230}
+                          value={form.heightCm}
+                          onChange={(e) =>
+                            setForm({ ...form, heightCm: e.target.value })
+                          }
+                          placeholder="e.g. 180"
+                        />
+                      </div>
+                      <div>
+                        <Label>Weight (kg)</Label>
+                        <Input
+                          type="number"
+                          min={30}
+                          max={150}
+                          value={form.weightKg}
+                          onChange={(e) =>
+                            setForm({ ...form, weightKg: e.target.value })
+                          }
+                          placeholder="e.g. 75"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>Map group</Label>
+                        <Input
+                          value={form.mapGroup}
+                          onChange={(e) =>
+                            setForm({ ...form, mapGroup: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label>Church unit</Label>
+                        <Input
+                          value={form.churchUnit}
+                          onChange={(e) =>
+                            setForm({ ...form, churchUnit: e.target.value })
+                          }
+                        />
+                      </div>
                     </div>
                     <div>
-                      <Label>Last name</Label>
-                      <Input
-                        value={form.lastName}
-                        onChange={(e) =>
-                          setForm({ ...form, lastName: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label>Player number</Label>
-                      <Input
-                        type="number"
-                        value={form.jerseyNumber}
-                        min={1}
-                        max={99}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            jerseyNumber: Number(e.target.value),
-                          })
-                        }
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label>Position</Label>
+                      <Label>Preferred foot</Label>
                       <Select
-                        value={form.position}
+                        value={form.preferredFoot}
                         onValueChange={(v) =>
-                          setForm({ ...form, position: v as Position })
+                          setForm({ ...form, preferredFoot: v as Foot })
                         }
-                        required
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="max-h-72">
-                          {ALL_POSITIONS.map((p) => (
-                            <SelectItem key={p} value={p}>
-                              {POSITION_NAME[p]} ({p})
+                        <SelectContent>
+                          {FEET.map((f) => (
+                            <SelectItem
+                              key={f}
+                              value={f}
+                              className="capitalize"
+                            >
+                              {f}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label>Height (cm)</Label>
-                      <Input
-                        type="number"
-                        min={100}
-                        max={230}
-                        value={form.heightCm}
-                        onChange={(e) =>
-                          setForm({ ...form, heightCm: e.target.value })
-                        }
-                        placeholder="e.g. 180"
-                      />
-                    </div>
-                    <div>
-                      <Label>Weight (kg)</Label>
-                      <Input
-                        type="number"
-                        min={30}
-                        max={150}
-                        value={form.weightKg}
-                        onChange={(e) =>
-                          setForm({ ...form, weightKg: e.target.value })
-                        }
-                        placeholder="e.g. 75"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label>Map group</Label>
-                      <Input
-                        value={form.mapGroup}
-                        onChange={(e) =>
-                          setForm({ ...form, mapGroup: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label>Church unit</Label>
-                      <Input
-                        value={form.churchUnit}
-                        onChange={(e) =>
-                          setForm({ ...form, churchUnit: e.target.value })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Preferred foot</Label>
-                    <Select
-                      value={form.preferredFoot}
-                      onValueChange={(v) =>
-                        setForm({ ...form, preferredFoot: v as Foot })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {FEET.map((f) => (
-                          <SelectItem key={f} value={f} className="capitalize">
-                            {f}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Player photo</Label>
-                    <div className="flex items-center gap-3 mt-1">
-                      <div className="h-14 w-14 rounded-full bg-secondary overflow-hidden flex items-center justify-center text-xs text-muted-foreground border border-border">
-                        {form.photoUrl ? (
-                          <img
-                            src={form.photoUrl}
-                            alt="preview"
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <Upload className="h-5 w-5" />
-                        )}
+                      <Label>Player photo</Label>
+                      <div className="flex items-center gap-3 mt-1">
+                        <div className="h-14 w-14 rounded-full bg-secondary overflow-hidden flex items-center justify-center text-xs text-muted-foreground border border-border">
+                          {form.photoUrl ? (
+                            <img
+                              src={form.photoUrl}
+                              alt="preview"
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <Upload className="h-5 w-5" />
+                          )}
+                        </div>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImage}
+                          className="cursor-pointer"
+                          required
+                        />
                       </div>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImage}
-                        className="cursor-pointer"
-                        required
-                      />
                     </div>
-                  </div>
-                  <Button type="submit" className="w-full">
-                    Add to squad
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
+                    <Button type="submit" className="w-full">
+                      Add to squad
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
 
           {players.length === 0 ? (

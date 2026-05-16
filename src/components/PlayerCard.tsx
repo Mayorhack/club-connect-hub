@@ -282,8 +282,7 @@ export function PlayerCard({ player }: Readonly<{ player: Player }>) {
               </p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 {fullName} wears jersey {player.jerseyNumber} and is registered
-                as a {POSITION_NAME[player.position].toLowerCase()} for the{" "}
-                {groupLabel[group].toLowerCase()} unit.
+                as a {POSITION_NAME[player.position].toLowerCase()}.
               </p>
             </div>
           </div>
