@@ -6,7 +6,8 @@ import {
   ALL_POSITIONS,
   Foot,
   getClubs,
-  getPlayersByClub,
+  getCachedPlayersByClub,
+  clearSquadCache,
   Player,
   Position,
   POSITION_NAME,
@@ -31,8 +32,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, AlertCircle, CheckCircle2, Upload } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  AlertCircle,
+  CheckCircle2,
+  Upload,
+  RefreshCw,
+} from "lucide-react";
 import { getPlayerRegistrationDeadlineStatus } from "@/lib/registrationDeadline";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 import { toast } from "sonner";
 import { PlayerCard } from "@/components/PlayerCard";
 
@@ -51,6 +60,27 @@ const emptyForm = {
   weightKg: "" as string,
 };
 
+function PhotoPreview({
+  uploading,
+  url,
+  alt,
+}: Readonly<{
+  uploading: boolean;
+  url: string;
+  alt: string;
+}>) {
+  if (uploading) return <span className="animate-spin text-base">⏳</span>;
+  if (url)
+    return <img src={url} alt={alt} className="h-full w-full object-cover" />;
+  return <Upload className="h-5 w-5" />;
+}
+
+function saveButtonLabel(saving: boolean, uploading: boolean) {
+  if (saving) return "Saving…";
+  if (uploading) return "Uploading photo…";
+  return "Save changes";
+}
+
 export default function MyClub() {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -62,9 +92,16 @@ export default function MyClub() {
   const club = clubs.find((c) => c.id === user?.clubId);
   const { data: players = [] } = useQuery({
     queryKey: ["players", user?.clubId],
-    queryFn: () => getPlayersByClub(user?.clubId ?? ""),
+    queryFn: () => getCachedPlayersByClub(user?.clubId ?? ""),
     enabled: !!user?.clubId,
   });
+
+  function handleRefreshSquad() {
+    if (!user?.clubId) return;
+    clearSquadCache(user.clubId);
+    qc.invalidateQueries({ queryKey: ["players", user.clubId] });
+    toast.success("Squad data refreshed from server.");
+  }
   const gkCount = players.filter((p) => p.position === "GK").length;
 
   const [open, setOpen] = useState(false);
@@ -99,6 +136,7 @@ export default function MyClub() {
     club?.assistantCoachPhotoUrl ?? "",
   );
   const [savingClub, setSavingClub] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!club) return;
@@ -155,41 +193,48 @@ export default function MyClub() {
       .finally(() => setSavingClub(false));
   };
 
-  const handleImage = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleImage = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024)
-      return toast.error("Image must be under 2MB");
-    const reader = new FileReader();
-    reader.onload = () =>
-      setForm((f) => ({
-        ...f,
-        photoUrl: typeof reader.result === "string" ? reader.result : undefined,
-      }));
-    reader.readAsDataURL(file);
+    if (file.size > 5 * 1024 * 1024)
+      return toast.error("Image must be under 5MB");
+    setUploading(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      setForm((f) => ({ ...f, photoUrl: url }));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+      e.target.value = "";
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const handleCoachImage = (
+  const handleCoachImage = async (
     e: ChangeEvent<HTMLInputElement>,
     target: "coach" | "assistant",
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Image must be under 2MB");
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
       e.target.value = "";
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result !== "string") return;
+    setUploading(true);
+    try {
+      const url = await uploadToCloudinary(file);
       if (target === "coach") {
-        setEditCoachPhotoUrl(reader.result);
+        setEditCoachPhotoUrl(url);
       } else {
-        setEditAssistantCoachPhotoUrl(reader.result);
+        setEditAssistantCoachPhotoUrl(url);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+      e.target.value = "";
+    } finally {
+      setUploading(false);
+    }
   };
 
   const addPlayer = (e: FormEvent) => {
@@ -294,7 +339,16 @@ export default function MyClub() {
 
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">Squad</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold">Squad</h2>
+              <button
+                onClick={handleRefreshSquad}
+                title="Refresh squad from server"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
+            </div>
             {deadline.isClosed ? (
               <p className="text-sm text-red-600 font-medium">
                 Deadline breached. Please reach out to the admin to pay your
@@ -449,27 +503,28 @@ export default function MyClub() {
                       <Label>Player photo</Label>
                       <div className="flex items-center gap-3 mt-1">
                         <div className="h-14 w-14 rounded-full bg-secondary overflow-hidden flex items-center justify-center text-xs text-muted-foreground border border-border">
-                          {form.photoUrl ? (
-                            <img
-                              src={form.photoUrl}
-                              alt="preview"
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <Upload className="h-5 w-5" />
-                          )}
+                          <PhotoPreview
+                            uploading={uploading}
+                            url={form.photoUrl}
+                            alt="preview"
+                          />
                         </div>
                         <Input
                           type="file"
                           accept="image/*"
                           onChange={handleImage}
                           className="cursor-pointer"
+                          disabled={uploading}
                           required
                         />
                       </div>
                     </div>
-                    <Button type="submit" className="w-full">
-                      Add to squad
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={uploading}
+                    >
+                      {uploading ? "Uploading photo…" : "Add to squad"}
                     </Button>
                   </form>
                 </DialogContent>
@@ -572,21 +627,18 @@ export default function MyClub() {
               <Label>Coach photo</Label>
               <div className="flex items-center gap-3 mt-1">
                 <div className="h-14 w-14 rounded-full bg-secondary overflow-hidden flex items-center justify-center text-xs text-muted-foreground border border-border">
-                  {editCoachPhotoUrl ? (
-                    <img
-                      src={editCoachPhotoUrl}
-                      alt="coach preview"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <Upload className="h-5 w-5" />
-                  )}
+                  <PhotoPreview
+                    uploading={uploading}
+                    url={editCoachPhotoUrl}
+                    alt="coach preview"
+                  />
                 </div>
                 <Input
                   type="file"
                   accept="image/*"
                   onChange={(e) => handleCoachImage(e, "coach")}
                   className="cursor-pointer"
+                  disabled={uploading}
                 />
               </div>
             </div>
@@ -623,31 +675,28 @@ export default function MyClub() {
               <Label>Assistant coach photo</Label>
               <div className="flex items-center gap-3 mt-1">
                 <div className="h-14 w-14 rounded-full bg-secondary overflow-hidden flex items-center justify-center text-xs text-muted-foreground border border-border">
-                  {editAssistantCoachPhotoUrl ? (
-                    <img
-                      src={editAssistantCoachPhotoUrl}
-                      alt="assistant coach preview"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <Upload className="h-5 w-5" />
-                  )}
+                  <PhotoPreview
+                    uploading={uploading}
+                    url={editAssistantCoachPhotoUrl}
+                    alt="assistant coach preview"
+                  />
                 </div>
                 <Input
                   type="file"
                   accept="image/*"
                   onChange={(e) => handleCoachImage(e, "assistant")}
                   className="cursor-pointer"
+                  disabled={uploading}
                 />
               </div>
             </div>
             <div className="sm:col-span-2">
               <Button
                 type="submit"
-                disabled={savingClub}
+                disabled={savingClub || uploading}
                 className="w-full sm:w-auto"
               >
-                {savingClub ? "Saving…" : "Save changes"}
+                {saveButtonLabel(savingClub, uploading)}
               </Button>
             </div>
           </form>

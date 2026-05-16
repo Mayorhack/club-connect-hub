@@ -395,6 +395,45 @@ export async function getPlayersByClub(clubId: string): Promise<Player[]> {
   return ((data ?? []) as PlayerRow[]).map(rowToPlayer);
 }
 
+// ── Squad localStorage cache ──────────────────────────────────────────────────
+
+const SQUAD_FULL_SIZE = 25;
+
+function squadCacheKey(clubId: string) {
+  return `squad_v1_${clubId}`;
+}
+
+export function clearSquadCache(clubId: string): void {
+  localStorage.removeItem(squadCacheKey(clubId));
+}
+
+export async function getCachedPlayersByClub(
+  clubId: string,
+): Promise<Player[]> {
+  // Serve from localStorage if a complete squad is cached
+  try {
+    const raw = localStorage.getItem(squadCacheKey(clubId));
+    if (raw) {
+      const cached = JSON.parse(raw) as Player[];
+      if (cached.length >= SQUAD_FULL_SIZE) return cached;
+      // Cached squad is incomplete — discard and re-fetch
+      localStorage.removeItem(squadCacheKey(clubId));
+    }
+  } catch {
+    localStorage.removeItem(squadCacheKey(clubId));
+  }
+
+  // Fetch from Supabase
+  const players = await getPlayersByClub(clubId);
+
+  // Persist to localStorage once the squad is complete
+  if (players.length >= SQUAD_FULL_SIZE) {
+    localStorage.setItem(squadCacheKey(clubId), JSON.stringify(players));
+  }
+
+  return players;
+}
+
 export async function getFixtures(): Promise<MatchFixture[]> {
   const { data, error } = await supabase
     .from("fixtures")
