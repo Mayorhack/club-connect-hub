@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { getPlayerRegistrationDeadlineStatus } from "./registrationDeadline";
 
 // ── Types & Constants ─────────────────────────────────────────────────────────
 
@@ -530,6 +531,10 @@ export async function deleteClub(id: string): Promise<void> {
 export async function createPlayer(
   player: Omit<Player, "id">,
 ): Promise<Player> {
+  const deadline = getPlayerRegistrationDeadlineStatus();
+  if (deadline.isClosed) {
+    throw new Error("Player registration is closed. The deadline has passed.");
+  }
   const { data, error } = await supabase
     .from("players")
     .insert({
