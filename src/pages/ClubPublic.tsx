@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import {
   getClubs,
-  getCachedPlayersByClub,
+  getPlayersByClub,
   POSITION_GROUP,
   PositionGroup,
 } from "@/lib/storage";
@@ -28,7 +28,7 @@ export default function ClubPublic() {
   const club = clubs.find((c) => c.id === id);
   const { data: players = [], isLoading: loadingPlayers } = useQuery({
     queryKey: ["players", id],
-    queryFn: () => getCachedPlayersByClub(id ?? ""),
+    queryFn: () => getPlayersByClub(id ?? ""),
     enabled: !!id,
   });
 

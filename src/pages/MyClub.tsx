@@ -6,8 +6,7 @@ import {
   ALL_POSITIONS,
   Foot,
   getClubs,
-  getCachedPlayersByClub,
-  clearSquadCache,
+  getPlayersByClub,
   Player,
   Position,
   POSITION_NAME,
@@ -92,13 +91,12 @@ export default function MyClub() {
   const club = clubs.find((c) => c.id === user?.clubId);
   const { data: players = [] } = useQuery({
     queryKey: ["players", user?.clubId],
-    queryFn: () => getCachedPlayersByClub(user?.clubId ?? ""),
+    queryFn: () => getPlayersByClub(user?.clubId ?? ""),
     enabled: !!user?.clubId,
   });
 
   function handleRefreshSquad() {
     if (!user?.clubId) return;
-    clearSquadCache(user.clubId);
     qc.invalidateQueries({ queryKey: ["players", user.clubId] });
     toast.success("Squad data refreshed from server.");
   }
