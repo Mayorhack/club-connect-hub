@@ -75,7 +75,7 @@ export function PlayerCard({
           type="button"
           className={`group relative block w-full rounded-2xl border border-border bg-card overflow-hidden text-left transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 animate-fade-in${
             inactive
-              ? " opacity-60 grayscale cursor-default"
+              ? " opacity-60 grayscale pointer-events-none"
               : " hover:-translate-y-1 hover:shadow-[var(--shadow-card)] hover:border-primary/30"
           }`}
         >
