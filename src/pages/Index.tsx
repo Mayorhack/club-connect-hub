@@ -11,6 +11,7 @@ import {
   TopScorers,
   Position,
   getTotals,
+  getCompletePlayerCountsByClub,
 } from "@/lib/storage";
 import {
   Users,
@@ -546,6 +547,16 @@ const Index = () => {
     queryFn: getTotals,
   });
 
+  const { data: completeCounts = {} } = useQuery({
+    queryKey: ["completeCounts"],
+    queryFn: getCompletePlayerCountsByClub,
+  });
+
+  const totalCompletePlayers = Object.values(completeCounts).reduce(
+    (sum, n) => sum + n,
+    0,
+  );
+
   const clubMap = Object.fromEntries(clubs.map((c) => [c.id, c]));
   const featuresContainerRef = useRevealContainer();
 
@@ -719,7 +730,7 @@ const Index = () => {
             renderSlide={(club) => (
               <ClubSpotlight
                 club={club}
-                playerCount={club.playerCount ?? 0}
+                playerCount={completeCounts[club.id] ?? 0}
                 goalsScored={goalsByClubId[club.id] ?? 0}
               />
             )}
@@ -734,7 +745,7 @@ const Index = () => {
             <h2 className="text-2xl font-bold">Registered Clubs</h2>
             <p className="text-sm text-muted-foreground mt-1">
               {totals?.totalClubs} club{totals?.totalClubs === 1 ? "" : "s"} ·{" "}
-              {totals?.totalPlayers} players total
+              {totalCompletePlayers} players total
             </p>
           </div>
         </div>
@@ -750,7 +761,8 @@ const Index = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {clubs.map((c, i) => {
-              const isComplete = c.playerCount >= 11;
+              const completePlayerCount = completeCounts[c.id] ?? 0;
+              const isComplete = completePlayerCount >= 11;
 
               return (
                 <Link
@@ -788,14 +800,15 @@ const Index = () => {
                     <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1">
-                          <Users className="h-3.5 w-3.5" /> {c.playerCount} / 25
+                          <Users className="h-3.5 w-3.5" />{" "}
+                          {completePlayerCount} / 25
                         </span>
                         <span className="flex items-center gap-1">
                           <CalendarDays className="h-3.5 w-3.5" />{" "}
                           {c.foundedYear}
                         </span>
                       </div>
-                      {!isComplete && c.playerCount > 0 && (
+                      {!isComplete && completePlayerCount > 0 && (
                         <span className="rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 text-[10px] font-semibold">
                           Incomplete
                         </span>
@@ -807,7 +820,7 @@ const Index = () => {
                         <div
                           className="h-full rounded-full transition-all"
                           style={{
-                            width: `${Math.min((c.playerCount / 25) * 100, 100)}%`,
+                            width: `${Math.min((completePlayerCount / 25) * 100, 100)}%`,
                             background: "var(--gradient-pitch)",
                           }}
                         />

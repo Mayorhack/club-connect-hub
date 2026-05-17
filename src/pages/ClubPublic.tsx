@@ -131,9 +131,9 @@ export default function ClubPublic() {
     );
   }
 
-  const sortedPlayers = [...players].sort(
-    (a, b) => a.jerseyNumber - b.jerseyNumber,
-  );
+  const sortedPlayers = [...players]
+    .filter((p) => p.mapGroup && p.photoUrl)
+    .sort((a, b) => a.jerseyNumber - b.jerseyNumber);
   const gkCount = sortedPlayers.filter((p) => p.position === "GK").length;
 
   return (

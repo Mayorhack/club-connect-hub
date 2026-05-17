@@ -561,6 +561,44 @@ export async function deletePlayer(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function updatePlayer(
+  id: string,
+  updates: Partial<Omit<Player, "id" | "clubId">>,
+): Promise<void> {
+  const row: Record<string, unknown> = {};
+  if (updates.firstName !== undefined) row.first_name = updates.firstName;
+  if (updates.lastName !== undefined) row.last_name = updates.lastName;
+  if (updates.position !== undefined) row.position = updates.position;
+  if (updates.jerseyNumber !== undefined)
+    row.jersey_number = updates.jerseyNumber;
+  if (updates.photoUrl !== undefined) row.photo_url = updates.photoUrl ?? null;
+  if (updates.mapGroup !== undefined) row.map_group = updates.mapGroup ?? null;
+  if (updates.churchUnit !== undefined)
+    row.church_unit = updates.churchUnit ?? null;
+  if (updates.preferredFoot !== undefined)
+    row.preferred_foot = updates.preferredFoot ?? null;
+  if (updates.heightCm !== undefined) row.height_cm = updates.heightCm ?? null;
+  if (updates.weightKg !== undefined) row.weight_kg = updates.weightKg ?? null;
+  const { error } = await supabase.from("players").update(row).eq("id", id);
+  if (error) throw error;
+}
+
+export async function getCompletePlayerCountsByClub(): Promise<
+  Record<string, number>
+> {
+  const { data, error } = await supabase
+    .from("players")
+    .select("club_id")
+    .not("photo_url", "is", null)
+    .not("map_group", "is", null);
+  if (error) throw error;
+  const counts: Record<string, number> = {};
+  for (const row of (data ?? []) as { club_id: string }[]) {
+    counts[row.club_id] = (counts[row.club_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
 // ── Fixture mutations ─────────────────────────────────────────────────────────
 
 export async function createFixture(

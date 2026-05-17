@@ -12,6 +12,7 @@ import {
   POSITION_NAME,
   createPlayer,
   deletePlayer,
+  updatePlayer,
   updateClub,
 } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ import {
 import {
   Plus,
   Trash2,
+  Pencil,
   AlertCircle,
   CheckCircle2,
   Upload,
@@ -104,6 +106,10 @@ export default function MyClub() {
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState(emptyForm);
+  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
 
   // Club info edit
   const [editName, setEditName] = useState(club?.name ?? "");
@@ -244,6 +250,7 @@ export default function MyClub() {
       return toast.error("Jersey number must be 1–99");
     if (players.some((p) => p.jerseyNumber === form.jerseyNumber))
       return toast.error(`Jersey #${form.jerseyNumber} already taken`);
+    if (!form.mapGroup.trim()) return toast.error("Map group is required");
     if (!form.photoUrl) return toast.error("Player photo is required");
     const newPlayer: Omit<Player, "id"> = {
       clubId: club.id,
@@ -273,6 +280,76 @@ export default function MyClub() {
     deletePlayer(id)
       .then(() => qc.invalidateQueries({ queryKey: ["players", user?.clubId] }))
       .catch((err: Error) => toast.error(err.message));
+  };
+
+  const startEditing = (p: Player) => {
+    setEditingPlayerId(p.id);
+    setEditForm({
+      firstName: p.firstName,
+      lastName: p.lastName,
+      position: p.position,
+      jerseyNumber: p.jerseyNumber,
+      mapGroup: p.mapGroup ?? "",
+      churchUnit: p.churchUnit ?? "",
+      preferredFoot: p.preferredFoot ?? "right",
+      photoUrl: p.photoUrl ?? "",
+      heightCm: p.heightCm == null ? "" : String(p.heightCm),
+      weightKg: p.weightKg == null ? "" : String(p.weightKg),
+    });
+    setEditOpen(true);
+  };
+
+  const saveEdit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingPlayerId) return;
+    if (!editForm.firstName.trim() || !editForm.lastName.trim())
+      return toast.error("First and last name required");
+    if (editForm.jerseyNumber < 1 || editForm.jerseyNumber > 99)
+      return toast.error("Jersey number must be 1–99");
+    if (
+      players.some(
+        (p) =>
+          p.jerseyNumber === editForm.jerseyNumber && p.id !== editingPlayerId,
+      )
+    )
+      return toast.error(`Jersey #${editForm.jerseyNumber} already taken`);
+    if (!editForm.mapGroup.trim()) return toast.error("Map group is required");
+    if (!editForm.photoUrl) return toast.error("Player photo is required");
+    updatePlayer(editingPlayerId, {
+      firstName: editForm.firstName.trim(),
+      lastName: editForm.lastName.trim(),
+      position: editForm.position,
+      jerseyNumber: editForm.jerseyNumber,
+      mapGroup: editForm.mapGroup.trim() || undefined,
+      churchUnit: editForm.churchUnit.trim() || undefined,
+      preferredFoot: editForm.preferredFoot,
+      photoUrl: editForm.photoUrl || undefined,
+      heightCm: editForm.heightCm ? Number(editForm.heightCm) : undefined,
+      weightKg: editForm.weightKg ? Number(editForm.weightKg) : undefined,
+    })
+      .then(() => {
+        toast.success("Player updated");
+        setEditOpen(false);
+        return qc.invalidateQueries({ queryKey: ["players", user?.clubId] });
+      })
+      .catch((err: Error) => toast.error(err.message));
+  };
+
+  const handleEditImage = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024)
+      return toast.error("Image must be under 5MB");
+    setUploading(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      setEditForm((f) => ({ ...f, photoUrl: url }));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+      e.target.value = "";
+    } finally {
+      setUploading(false);
+    }
   };
 
   const squadFull = players.length >= 25;
@@ -461,6 +538,7 @@ export default function MyClub() {
                           onChange={(e) =>
                             setForm({ ...form, mapGroup: e.target.value })
                           }
+                          required
                         />
                       </div>
                       <div>
@@ -530,6 +608,168 @@ export default function MyClub() {
             )}
           </div>
 
+          {/* Edit player dialog */}
+          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit player</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={saveEdit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>First name</Label>
+                    <Input
+                      value={editForm.firstName}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, firstName: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label>Last name</Label>
+                    <Input
+                      value={editForm.lastName}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, lastName: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Player number</Label>
+                    <Input
+                      type="number"
+                      value={editForm.jerseyNumber}
+                      min={1}
+                      max={99}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          jerseyNumber: Number(e.target.value),
+                        })
+                      }
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label>Position</Label>
+                    <Select
+                      value={editForm.position}
+                      onValueChange={(v) =>
+                        setEditForm({ ...editForm, position: v as Position })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {ALL_POSITIONS.map((p) => (
+                          <SelectItem key={p} value={p}>
+                            {POSITION_NAME[p]} ({p})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Height (cm)</Label>
+                    <Input
+                      type="number"
+                      min={100}
+                      max={230}
+                      value={editForm.heightCm}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, heightCm: e.target.value })
+                      }
+                      placeholder="e.g. 180"
+                    />
+                  </div>
+                  <div>
+                    <Label>Weight (kg)</Label>
+                    <Input
+                      type="number"
+                      min={30}
+                      max={150}
+                      value={editForm.weightKg}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, weightKg: e.target.value })
+                      }
+                      placeholder="e.g. 75"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Map group</Label>
+                    <Input
+                      value={editForm.mapGroup}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, mapGroup: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label>Church unit</Label>
+                    <Input
+                      value={editForm.churchUnit}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, churchUnit: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Preferred foot</Label>
+                  <Select
+                    value={editForm.preferredFoot}
+                    onValueChange={(v) =>
+                      setEditForm({ ...editForm, preferredFoot: v as Foot })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FEET.map((f) => (
+                        <SelectItem key={f} value={f} className="capitalize">
+                          {f}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Player photo</Label>
+                  <div className="flex items-center gap-3 mt-1">
+                    <div className="h-14 w-14 rounded-full bg-secondary overflow-hidden flex items-center justify-center text-xs text-muted-foreground border border-border">
+                      <PhotoPreview
+                        uploading={uploading}
+                        url={editForm.photoUrl}
+                        alt="preview"
+                      />
+                    </div>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEditImage}
+                      className="cursor-pointer"
+                      disabled={uploading}
+                    />
+                  </div>
+                </div>
+                <Button type="submit" className="w-full" disabled={uploading}>
+                  {saveButtonLabel(false, uploading)}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+
           {players.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-12 text-center text-muted-foreground">
               No players yet — add your first.
@@ -537,6 +777,7 @@ export default function MyClub() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {players.map((p, i) => {
+                const incomplete = !p.mapGroup || !p.photoUrl;
                 return (
                   <div
                     key={p.id}
@@ -544,13 +785,34 @@ export default function MyClub() {
                     style={{ animationDelay: `${i * 40}ms` }}
                   >
                     <PlayerCard player={p} />
-                    <button
-                      onClick={() => removePlayer(p.id)}
-                      className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                      aria-label="Remove"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {incomplete && (
+                      <div
+                        title={`Missing: ${[!p.photoUrl && "photo", !p.mapGroup && "map group"].filter(Boolean).join(", ")} — player will not appear on public page`}
+                        className="absolute top-2 left-2 z-10 flex items-center gap-1 rounded-md bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-sm"
+                      >
+                        <AlertCircle className="h-3 w-3" />
+                        Needs update
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEditing(p);
+                        }}
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10"
+                        aria-label="Edit"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => removePlayer(p.id)}
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        aria-label="Remove"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 );
               })}

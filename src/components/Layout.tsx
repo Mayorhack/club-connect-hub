@@ -32,7 +32,7 @@ function DesktopNav({ user, transparent, theme, toggle, onLogout }: NavProps) {
   return (
     <nav className="hidden sm:flex items-center gap-1 sm:gap-2">
       <NavLink
-        to="/"
+        to="/#clubs"
         end
         className={({ isActive }) => navLinkClass(isActive, transparent)}
       >
@@ -113,7 +113,7 @@ function MobileMenu({ user, onLogout }: MobileMenuProps) {
     <div className="sm:hidden border-t border-border bg-card/95 backdrop-blur-md">
       <nav className="container py-3 flex flex-col gap-1">
         <NavLink
-          to="/"
+          to="/#clubs"
           end
           className={({ isActive }) => mobileNavLinkClass(isActive)}
         >
