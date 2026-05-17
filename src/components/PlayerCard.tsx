@@ -60,7 +60,10 @@ const groupLabel: Record<PositionGroup, string> = {
   FWD: "Forward",
 };
 
-export function PlayerCard({ player }: Readonly<{ player: Player }>) {
+export function PlayerCard({
+  player,
+  inactive = false,
+}: Readonly<{ player: Player; inactive?: boolean }>) {
   const fullName = `${player.firstName} ${player.lastName}`.trim();
   const group = POSITION_GROUP[player.position];
   const colors = groupColors[group];
@@ -70,8 +73,17 @@ export function PlayerCard({ player }: Readonly<{ player: Player }>) {
       <DialogTrigger asChild>
         <button
           type="button"
-          className="group relative block w-full rounded-2xl border border-border bg-card overflow-hidden text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card)] hover:border-primary/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 animate-fade-in"
+          className={`group relative block w-full rounded-2xl border border-border bg-card overflow-hidden text-left transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 animate-fade-in${
+            inactive
+              ? " opacity-60 grayscale cursor-default"
+              : " hover:-translate-y-1 hover:shadow-[var(--shadow-card)] hover:border-primary/30"
+          }`}
         >
+          {inactive && (
+            <div className="absolute top-2 right-2 z-10 rounded-full bg-muted border border-border text-muted-foreground text-[10px] font-semibold px-2 py-0.5 leading-none flex items-center">
+              Inactive
+            </div>
+          )}
           <div className={`h-1.5 w-full ${colors.accent}`} />
 
           <div
@@ -245,14 +257,14 @@ export function PlayerCard({ player }: Readonly<{ player: Player }>) {
                   Physical
                 </p>
                 <p className="mt-2 text-lg font-semibold">
-                  {player.heightCm != null
-                    ? `${player.heightCm} cm`
-                    : "Height not set"}
+                  {player.heightCm == null
+                    ? "Height not set"
+                    : `${player.heightCm} cm`}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {player.weightKg != null
-                    ? `${player.weightKg} kg`
-                    : "Weight not set"}
+                  {player.weightKg == null
+                    ? "Weight not set"
+                    : `${player.weightKg} kg`}
                 </p>
               </div>
             </div>

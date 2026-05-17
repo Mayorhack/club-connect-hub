@@ -131,10 +131,12 @@ export default function ClubPublic() {
     );
   }
 
-  const sortedPlayers = [...players]
-    .filter((p) => p.mapGroup && p.photoUrl)
-    .sort((a, b) => a.jerseyNumber - b.jerseyNumber);
-  const gkCount = sortedPlayers.filter((p) => p.position === "GK").length;
+  const sortedPlayers = [...players].sort(
+    (a, b) => a.jerseyNumber - b.jerseyNumber,
+  );
+  const gkCount = sortedPlayers.filter(
+    (p) => p.position === "GK" && p.mapGroup && p.photoUrl,
+  ).length;
 
   return (
     <Layout>
@@ -266,7 +268,11 @@ export default function ClubPublic() {
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {list.map((p) => (
-                      <PlayerCard key={p.id} player={p} />
+                      <PlayerCard
+                        key={p.id}
+                        player={p}
+                        inactive={!p.mapGroup || !p.photoUrl}
+                      />
                     ))}
                   </div>
                 </div>
