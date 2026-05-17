@@ -784,7 +784,10 @@ export default function MyClub() {
                     className="group relative animate-fade-in"
                     style={{ animationDelay: `${i * 40}ms` }}
                   >
-                    <PlayerCard player={p} />
+                    <PlayerCard
+                      player={p}
+                      inactive={!p.mapGroup || !p.photoUrl}
+                    />
                     {incomplete && (
                       <div
                         title={`Missing: ${[!p.photoUrl && "photo", !p.mapGroup && "map group"].filter(Boolean).join(", ")} — player will not appear on public page`}
