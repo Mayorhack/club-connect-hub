@@ -542,20 +542,10 @@ const Index = () => {
     queryKey: ["fixtures"],
     queryFn: getFixtures,
   });
-  const { data: totals = { totalClubs: 0, totalPlayers: 0 } } = useQuery({
-    queryKey: ["totals"],
-    queryFn: getTotals,
-  });
-
-  const { data: completeCounts = {} } = useQuery({
-    queryKey: ["completeCounts"],
-    queryFn: getCompletePlayerCountsByClub,
-  });
-
-  const totalCompletePlayers = Object.values(completeCounts).reduce(
-    (sum, n) => sum + n,
-    0,
-  );
+  // const { data: totals = { totalClubs: 0, totalPlayers: 0 } } = useQuery({
+  //   queryKey: ["totals"],
+  //   queryFn: getTotals,
+  // });
 
   const clubMap = Object.fromEntries(clubs.map((c) => [c.id, c]));
   const featuresContainerRef = useRevealContainer();
@@ -601,11 +591,7 @@ const Index = () => {
     <Layout>
       {/* ── Hero Carousel ── */}
       <section className="relative overflow-hidden border-b border-border bg-black">
-        <HeroCarousel
-          slides={HERO_SLIDES}
-          clubsCount={totals.totalClubs}
-          totalPlayers={totals.totalPlayers}
-        />
+        <HeroCarousel slides={HERO_SLIDES} clubsCount={7} totalPlayers={175} />
       </section>
 
       {/* ── Features row ── */}
@@ -730,7 +716,7 @@ const Index = () => {
             renderSlide={(club) => (
               <ClubSpotlight
                 club={club}
-                playerCount={completeCounts[club.id] ?? 0}
+                playerCount={club.playerCount ?? 0}
                 goalsScored={goalsByClubId[club.id] ?? 0}
               />
             )}
@@ -744,13 +730,14 @@ const Index = () => {
           <div>
             <h2 className="text-2xl font-bold">Registered Clubs</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {totals?.totalClubs} club{totals?.totalClubs === 1 ? "" : "s"} ·{" "}
-              {totalCompletePlayers} players total
+              {clubs.length} club{clubs.length === 1 ? "" : "s"} ·{" "}
+              {clubs.reduce((sum, c) => sum + (c.playerCount ?? 0), 0)} players
+              total
             </p>
           </div>
         </div>
 
-        {totals?.totalClubs === 0 ? (
+        {clubs.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border p-16 text-center">
             <Logo />
             <p className="text-muted-foreground font-medium">No clubs yet.</p>
@@ -761,7 +748,7 @@ const Index = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {clubs.map((c, i) => {
-              const completePlayerCount = completeCounts[c.id] ?? 0;
+              const completePlayerCount = c.playerCount ?? 0;
               const isComplete = completePlayerCount >= 11;
 
               return (
