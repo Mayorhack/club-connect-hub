@@ -330,10 +330,10 @@ function HeroCarousel({
       ))}
 
       {/* Content */}
-      <div className="relative h-full container flex items-center">
+      <div className="relative h-full container sm:mt-0 mt-12 flex items-center">
         <div key={idx} className="max-w-lg z-10">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium tracking-wide uppercase mb-6 text-white anim-fade-in">
-            <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+            <div className="h-1.5 w-1.5 rounded-full  bg-white animate-pulse" />
             PIE Cup — Season 2026
           </div>
 
