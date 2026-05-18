@@ -541,10 +541,15 @@ export async function deleteClub(id: string): Promise<void> {
 
 export async function createPlayer(
   player: Omit<Player, "id">,
+  options: { bypassDeadline?: boolean } = {},
 ): Promise<Player> {
-  const deadline = getPlayerRegistrationDeadlineStatus();
-  if (deadline.isClosed) {
-    throw new Error("Player registration is closed. The deadline has passed.");
+  if (!options.bypassDeadline) {
+    const deadline = getPlayerRegistrationDeadlineStatus();
+    if (deadline.isClosed) {
+      throw new Error(
+        "Player registration is closed. The deadline has passed.",
+      );
+    }
   }
   const { data, error } = await supabase
     .from("players")

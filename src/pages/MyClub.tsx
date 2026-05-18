@@ -267,7 +267,7 @@ export default function MyClub() {
       heightCm: form.heightCm ? Number(form.heightCm) : undefined,
       weightKg: form.weightKg ? Number(form.weightKg) : undefined,
     };
-    createPlayer(newPlayer)
+    createPlayer(newPlayer, { bypassDeadline: club.canRegisterPlayer })
       .then(() => {
         toast.success("Player added");
         setOpen(false);
@@ -303,7 +303,6 @@ export default function MyClub() {
 
   const saveEdit = (e: FormEvent) => {
     e.preventDefault();
-    if (deadline.isClosed) return;
     if (!club.canRegisterPlayer) return;
     if (!editingPlayerId) return;
     if (!editForm.firstName.trim() || !editForm.lastName.trim())
