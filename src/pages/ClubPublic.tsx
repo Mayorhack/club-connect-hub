@@ -271,7 +271,7 @@ export default function ClubPublic() {
                       <PlayerCard
                         key={p.id}
                         player={p}
-                        inactive={!p.mapGroup || !p.photoUrl}
+                        inactive={(!p.mapGroup && !p.churchUnit) || !p.photoUrl}
                       />
                     ))}
                   </div>

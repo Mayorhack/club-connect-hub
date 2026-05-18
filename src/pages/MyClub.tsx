@@ -786,7 +786,7 @@ export default function MyClub() {
                   >
                     <PlayerCard
                       player={p}
-                      inactive={!p.mapGroup || !p.photoUrl}
+                      inactive={(!p.mapGroup && !p.churchUnit) || !p.photoUrl}
                     />
                     {incomplete && (
                       <div
