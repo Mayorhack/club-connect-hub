@@ -56,8 +56,8 @@ export default function Signup() {
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? "Creating account…" : "Sign up"}
+          <Button type="submit" className="w-full" disabled={true}>
+            {submitting ? "Creating account…" : "Sign up Disabled"}
           </Button>
           <p className="text-sm text-center text-muted-foreground">
             Have an account?{" "}
