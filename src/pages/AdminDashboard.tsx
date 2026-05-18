@@ -92,6 +92,8 @@ export default function AdminDashboard() {
   const [fixtureHomeClubId, setFixtureHomeClubId] = useState("");
   const [fixtureAwayClubId, setFixtureAwayClubId] = useState("");
   const [fixtureVenue, setFixtureVenue] = useState("");
+  const [fixtureVenueMapsUrl, setFixtureVenueMapsUrl] = useState("");
+  const [fixtureVenueDirections, setFixtureVenueDirections] = useState("");
 
   function handleLogoUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -242,6 +244,8 @@ export default function AdminDashboard() {
         homeClubId: fixtureHomeClubId,
         awayClubId: fixtureAwayClubId,
         venue: fixtureVenue.trim() || undefined,
+        venueMapsUrl: fixtureVenueMapsUrl.trim() || undefined,
+        venueDirections: fixtureVenueDirections.trim() || undefined,
       });
       toast.success("Fixture created");
       setFixtureOpen(false);
@@ -250,6 +254,8 @@ export default function AdminDashboard() {
       setFixtureHomeClubId("");
       setFixtureAwayClubId("");
       setFixtureVenue("");
+      setFixtureVenueMapsUrl("");
+      setFixtureVenueDirections("");
       await invalidateDashboard();
     } catch (error) {
       toast.error((error as Error).message);
@@ -273,6 +279,8 @@ export default function AdminDashboard() {
     const matchday = Number(formData.get("matchday"));
     const kickoffDate = readFormString(formData, "kickoffDate");
     const venue = readFormString(formData, "venue").trim();
+    const venueMapsUrl = readFormString(formData, "venueMapsUrl").trim();
+    const venueDirections = readFormString(formData, "venueDirections").trim();
 
     if (!kickoffDate || !matchday) {
       toast.error("Matchday and date are required");
@@ -284,6 +292,8 @@ export default function AdminDashboard() {
         matchday,
         kickoffDate,
         venue: venue || undefined,
+        venueMapsUrl: venueMapsUrl || undefined,
+        venueDirections: venueDirections || undefined,
       });
       toast.success("Fixture updated");
       await invalidateDashboard();
@@ -523,7 +533,10 @@ export default function AdminDashboard() {
                   className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="font-semibold">{club.name}</div>
+                    <div className="font-semibold">
+                      {club.name}
+                      {club.cciBranch ? ` (${club.cciBranch})` : ""}
+                    </div>
                     <div className="text-sm text-muted-foreground">
                       {club.city} · est. {club.foundedYear} · {playerCount}{" "}
                       players
@@ -674,6 +687,7 @@ export default function AdminDashboard() {
                           {clubs.map((club) => (
                             <SelectItem key={club.id} value={club.id}>
                               {club.name}
+                              {club.cciBranch ? ` (${club.cciBranch})` : ""}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -692,6 +706,7 @@ export default function AdminDashboard() {
                           {clubs.map((club) => (
                             <SelectItem key={club.id} value={club.id}>
                               {club.name}
+                              {club.cciBranch ? ` (${club.cciBranch})` : ""}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -704,6 +719,24 @@ export default function AdminDashboard() {
                       value={fixtureVenue}
                       onChange={(e) => setFixtureVenue(e.target.value)}
                       placeholder="e.g. CCI Main Pitch"
+                    />
+                  </div>
+                  <div>
+                    <Label>Google Maps link (optional)</Label>
+                    <Input
+                      value={fixtureVenueMapsUrl}
+                      onChange={(e) => setFixtureVenueMapsUrl(e.target.value)}
+                      placeholder="https://maps.google.com/?q=..."
+                    />
+                  </div>
+                  <div>
+                    <Label>Directions (optional)</Label>
+                    <Input
+                      value={fixtureVenueDirections}
+                      onChange={(e) =>
+                        setFixtureVenueDirections(e.target.value)
+                      }
+                      placeholder="e.g. Enter through the main gate, turn left..."
                     />
                   </div>
                   <Button
@@ -769,7 +802,14 @@ export default function AdminDashboard() {
                           const away = clubs.find(
                             (club) => club.id === fixture.awayClubId,
                           );
-
+                          let homeLabel = home?.name ?? "Unknown";
+                          if (home?.cciBranch) {
+                            homeLabel = home.name + " (" + home.cciBranch + ")";
+                          }
+                          let awayLabel = away?.name ?? "Unknown";
+                          if (away?.cciBranch) {
+                            awayLabel = away.name + " (" + away.cciBranch + ")";
+                          }
                           return (
                             <div
                               key={fixture.id}
@@ -811,6 +851,22 @@ export default function AdminDashboard() {
                                     defaultValue={fixture.venue ?? ""}
                                   />
                                 </div>
+                                <div>
+                                  <Label>Google Maps link</Label>
+                                  <Input
+                                    name="venueMapsUrl"
+                                    defaultValue={fixture.venueMapsUrl ?? ""}
+                                    placeholder="https://maps.google.com/?q=..."
+                                  />
+                                </div>
+                                <div>
+                                  <Label>Directions</Label>
+                                  <Input
+                                    name="venueDirections"
+                                    defaultValue={fixture.venueDirections ?? ""}
+                                    placeholder="e.g. Enter through the main gate..."
+                                  />
+                                </div>
                                 <div className="flex items-end">
                                   <Button
                                     type="submit"
@@ -825,8 +881,7 @@ export default function AdminDashboard() {
                               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between rounded-lg border border-border bg-card px-3 py-2">
                                 <div className="min-w-0">
                                   <p className="text-sm font-medium truncate">
-                                    {home?.name ?? "Unknown"} vs{" "}
-                                    {away?.name ?? "Unknown"}
+                                    {homeLabel} vs {awayLabel}
                                   </p>
                                 </div>
 

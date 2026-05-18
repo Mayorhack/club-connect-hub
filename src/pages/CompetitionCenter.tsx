@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
 import {
@@ -7,8 +7,15 @@ import {
   getFixtures,
   getMatchGoals,
   getTopScorers,
+  type MatchFixture,
 } from "@/lib/storage";
-import { CalendarDays, Trophy } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CalendarDays, MapPin, Trophy } from "lucide-react";
 
 function prettyDate(dateIso: string): string {
   const dt = new Date(`${dateIso}T12:00:00`);
@@ -82,6 +89,8 @@ export default function CompetitionCenter() {
       return a.clubId.localeCompare(b.clubId);
     });
   }, [table, clubMap]);
+
+  const [venueFixture, setVenueFixture] = useState<MatchFixture | null>(null);
 
   const readyForSemiFinals =
     table.length >= 4 && table.every((row) => row.played >= 2);
@@ -175,9 +184,22 @@ export default function CompetitionCenter() {
                         key={fixture.id}
                         className="rounded-lg border border-border bg-background px-3 py-2"
                       >
-                        <div className="text-xs text-muted-foreground mb-1">
-                          {prettyDate(fixture.kickoffDate)}
-                          {fixture.venue ? ` · ${fixture.venue}` : ""}
+                        <div className="flex justify-between items-start mb-1">
+                          <div className="text-xs text-muted-foreground   ">
+                            {prettyDate(fixture.kickoffDate)}
+                            {fixture.venue ? ` · ${fixture.venue}` : ""}
+                          </div>
+                          {(fixture.venueMapsUrl ||
+                            fixture.venueDirections) && (
+                            <button
+                              type="button"
+                              onClick={() => setVenueFixture(fixture)}
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                            >
+                              <MapPin className="h-3 w-3" />
+                              How to get there
+                            </button>
+                          )}
                         </div>
                         <div className="flex items-center justify-between gap-3 text-sm sm:text-base">
                           <span className="font-medium">{home}</span>
@@ -363,6 +385,45 @@ export default function CompetitionCenter() {
           </section>
         </aside>
       </div>
+
+      <Dialog
+        open={venueFixture !== null}
+        onOpenChange={(open) => {
+          if (!open) setVenueFixture(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary" />
+              How to get there
+            </DialogTitle>
+          </DialogHeader>
+          {venueFixture && (
+            <div className="space-y-4 text-sm">
+              {venueFixture.venue && (
+                <p className="font-medium">{venueFixture.venue}</p>
+              )}
+              {venueFixture.venueDirections && (
+                <p className="text-muted-foreground">
+                  {venueFixture.venueDirections}
+                </p>
+              )}
+              {venueFixture.venueMapsUrl && (
+                <a
+                  href={venueFixture.venueMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  <MapPin className="h-4 w-4" />
+                  Open in Google Maps
+                </a>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

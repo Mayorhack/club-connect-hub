@@ -10,9 +10,13 @@ import {
   getTopScorers,
   TopScorers,
   Position,
-  getTotals,
-  getCompletePlayerCountsByClub,
 } from "@/lib/storage";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Users,
   Shield,
@@ -96,6 +100,8 @@ function UpcomingFixtureCard({
   homeName,
   awayName,
 }: Readonly<{ fixture: MatchFixture; homeName: string; awayName: string }>) {
+  const [venueOpen, setVenueOpen] = useState(false);
+  const hasVenueInfo = !!(fixture.venueMapsUrl || fixture.venueDirections);
   return (
     <div className="rounded-2xl border border-border bg-card p-4 hover:border-primary/30 transition-colors">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -106,11 +112,51 @@ function UpcomingFixtureCard({
         <span className="text-xs text-muted-foreground">vs</span>
         <p className="text-sm font-semibold truncate text-right">{awayName}</p>
       </div>
-      {fixture.venue && (
-        <p className="mt-2 text-xs text-muted-foreground truncate">
-          Venue: {fixture.venue}
-        </p>
-      )}
+      <div className="mt-2 flex items-center justify-between gap-2">
+        {fixture.venue && (
+          <p className="text-xs text-muted-foreground truncate">
+            {fixture.venue}
+          </p>
+        )}
+        {hasVenueInfo && (
+          <button
+            type="button"
+            onClick={() => setVenueOpen(true)}
+            className="inline-flex shrink-0 items-center gap-1 text-xs text-primary hover:underline"
+          >
+            <MapPin className="h-3 w-3" />
+            How to get there
+          </button>
+        )}
+      </div>
+
+      <Dialog open={venueOpen} onOpenChange={setVenueOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary" />
+              How to get there
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm">
+            {fixture.venue && <p className="font-medium">{fixture.venue}</p>}
+            {fixture.venueDirections && (
+              <p className="text-muted-foreground">{fixture.venueDirections}</p>
+            )}
+            {fixture.venueMapsUrl && (
+              <a
+                href={fixture.venueMapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                <MapPin className="h-4 w-4" />
+                Open in Google Maps
+              </a>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

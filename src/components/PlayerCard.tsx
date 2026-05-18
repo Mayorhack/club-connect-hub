@@ -179,123 +179,126 @@ export function PlayerCard({
         </button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-4xl overflow-hidden p-0">
-        <div className={`h-1.5 w-full ${colors.accent}`} />
-        <div className="grid lg:grid-cols-[minmax(0,320px)_1fr]">
-          <div
-            className={`bg-gradient-to-b ${colors.bg} p-6 sm:p-8 border-b lg:border-b-0 lg:border-r border-border/60`}
-          >
-            <div className="flex items-center justify-between gap-4 mb-6">
-              <div>
-                <p
-                  className={`text-xs font-semibold uppercase tracking-[0.25em] ${colors.text}`}
-                >
-                  Player profile
-                </p>
-                <h2 className="mt-2 text-3xl font-black tracking-tight">
-                  {fullName}
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {POSITION_NAME[player.position]} · {groupLabel[group]}
-                </p>
-              </div>
-              <div className={`text-right leading-none ${colors.text}`}>
-                <div className="text-6xl font-black tabular-nums opacity-90">
-                  {player.jerseyNumber}
+      <DialogContent className="max-w-4xl p-0 max-h-[90svh] flex flex-col">
+        <div className={`h-1.5 w-full shrink-0 ${colors.accent}`} />
+        <div className="overflow-y-auto flex-1">
+          <div className="grid lg:grid-cols-[minmax(0,320px)_1fr]">
+            <div
+              className={`bg-gradient-to-b ${colors.bg} p-6 sm:p-8 border-b lg:border-b-0 lg:border-r border-border/60`}
+            >
+              <div className="flex items-center justify-between gap-4 mb-6">
+                <div>
+                  <p
+                    className={`text-xs font-semibold uppercase tracking-[0.25em] ${colors.text}`}
+                  >
+                    Player profile
+                  </p>
+                  <h2 className="mt-2 text-3xl font-black tracking-tight">
+                    {fullName}
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {POSITION_NAME[player.position]} · {groupLabel[group]}
+                  </p>
                 </div>
-                <div className="text-[10px] uppercase tracking-[0.35em] text-muted-foreground mt-1">
-                  Jersey No.
+                <div className={`text-right leading-none ${colors.text}`}>
+                  <div className="text-6xl font-black tabular-nums opacity-90">
+                    {player.jerseyNumber}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-[0.35em] text-muted-foreground mt-1">
+                    Jersey No.
+                  </div>
+                </div>
+              </div>
+
+              <div className="mx-auto flex w-full max-w-[240px] items-center justify-center">
+                <div className="relative h-56 w-56 overflow-hidden rounded-full border-4 border-white/70 dark:border-white/15 shadow-2xl bg-secondary flex items-center justify-center text-5xl font-black text-secondary-foreground">
+                  {player.photoUrl ? (
+                    <img
+                      src={player.photoUrl}
+                      alt={fullName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    initials(fullName)
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="mx-auto flex w-full max-w-[240px] items-center justify-center">
-              <div className="relative h-56 w-56 overflow-hidden rounded-full border-4 border-white/70 dark:border-white/15 shadow-2xl bg-secondary flex items-center justify-center text-5xl font-black text-secondary-foreground">
-                {player.photoUrl ? (
-                  <img
-                    src={player.photoUrl}
-                    alt={fullName}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  initials(fullName)
-                )}
-              </div>
-            </div>
-          </div>
+            <div className="space-y-6 p-6 sm:p-8">
+              <DialogHeader className="text-left">
+                <DialogTitle className="sr-only">{fullName}</DialogTitle>
+                <DialogDescription>
+                  Full squad details for {fullName}.
+                </DialogDescription>
+              </DialogHeader>
 
-          <div className="space-y-6 p-6 sm:p-8">
-            <DialogHeader className="text-left">
-              <DialogTitle className="sr-only">{fullName}</DialogTitle>
-              <DialogDescription>
-                Full squad details for {fullName}.
-              </DialogDescription>
-            </DialogHeader>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                    Position
+                  </p>
+                  <p className="mt-2 text-lg font-semibold">
+                    {POSITION_NAME[player.position]}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {groupLabel[group]} group
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                    Preferred foot
+                  </p>
+                  <p className="mt-2 text-lg font-semibold capitalize">
+                    {player.preferredFoot ?? "Not set"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                    Physical
+                  </p>
+                  <p className="mt-2 text-lg font-semibold">
+                    {player.heightCm == null
+                      ? "Height not set"
+                      : `${player.heightCm} cm`}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {player.weightKg == null
+                      ? "Weight not set"
+                      : `${player.weightKg} kg`}
+                  </p>
+                </div>
+              </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="rounded-2xl border border-border bg-card p-4">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Position
-                </p>
-                <p className="mt-2 text-lg font-semibold">
-                  {POSITION_NAME[player.position]}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {groupLabel[group]} group
-                </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-border bg-muted/30 p-4">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                    Map group
+                  </p>
+                  <p className="mt-2 text-base font-medium">
+                    {player.mapGroup || "Not provided"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border bg-muted/30 p-4">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                    Church unit
+                  </p>
+                  <p className="mt-2 text-base font-medium">
+                    {player.churchUnit || "Not provided"}
+                  </p>
+                </div>
               </div>
-              <div className="rounded-2xl border border-border bg-card p-4">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Preferred foot
-                </p>
-                <p className="mt-2 text-lg font-semibold capitalize">
-                  {player.preferredFoot ?? "Not set"}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-border bg-card p-4">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Physical
-                </p>
-                <p className="mt-2 text-lg font-semibold">
-                  {player.heightCm == null
-                    ? "Height not set"
-                    : `${player.heightCm} cm`}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {player.weightKg == null
-                    ? "Weight not set"
-                    : `${player.weightKg} kg`}
-                </p>
-              </div>
-            </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-border bg-muted/30 p-4">
+              <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
                 <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Map group
+                  Summary
                 </p>
-                <p className="mt-2 text-base font-medium">
-                  {player.mapGroup || "Not provided"}
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  {fullName} wears jersey {player.jerseyNumber} and is
+                  registered as a {POSITION_NAME[player.position].toLowerCase()}
+                  .
                 </p>
               </div>
-              <div className="rounded-2xl border border-border bg-muted/30 p-4">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Church unit
-                </p>
-                <p className="mt-2 text-base font-medium">
-                  {player.churchUnit || "Not provided"}
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                Summary
-              </p>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {fullName} wears jersey {player.jerseyNumber} and is registered
-                as a {POSITION_NAME[player.position].toLowerCase()}.
-              </p>
             </div>
           </div>
         </div>

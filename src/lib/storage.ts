@@ -149,6 +149,8 @@ export interface MatchFixture {
   homeScore?: number;
   awayScore?: number;
   venue?: string;
+  venueMapsUrl?: string;
+  venueDirections?: string;
 }
 
 export interface MatchGoal {
@@ -237,6 +239,8 @@ interface MatchFixtureRow {
   home_score: number | null;
   away_score: number | null;
   venue: string | null;
+  venue_maps_url: string | null;
+  venue_directions: string | null;
 }
 
 interface MatchGoalRow {
@@ -350,6 +354,8 @@ function rowToFixture(r: MatchFixtureRow): MatchFixture {
     homeScore: r.home_score ?? undefined,
     awayScore: r.away_score ?? undefined,
     venue: r.venue ?? undefined,
+    venueMapsUrl: r.venue_maps_url ?? undefined,
+    venueDirections: r.venue_directions ?? undefined,
   };
 }
 
@@ -622,6 +628,8 @@ export async function createFixture(
       home_score: fixture.homeScore ?? null,
       away_score: fixture.awayScore ?? null,
       venue: fixture.venue ?? null,
+      venue_maps_url: fixture.venueMapsUrl ?? null,
+      venue_directions: fixture.venueDirections ?? null,
     })
     .select()
     .single();
@@ -646,6 +654,10 @@ export async function updateFixture(
   if (updates.homeScore !== undefined) row.home_score = updates.homeScore;
   if (updates.awayScore !== undefined) row.away_score = updates.awayScore;
   if (updates.venue !== undefined) row.venue = updates.venue ?? null;
+  if (updates.venueMapsUrl !== undefined)
+    row.venue_maps_url = updates.venueMapsUrl ?? null;
+  if (updates.venueDirections !== undefined)
+    row.venue_directions = updates.venueDirections ?? null;
   const { error } = await supabase.from("fixtures").update(row).eq("id", id);
   if (error) {
     if (isMissingTableError(error, "fixtures")) {
