@@ -107,6 +107,7 @@ export interface Club {
   assistantCoachMapGroup?: string;
   assistantCoachServiceUnit?: string;
   assistantCoachPhotoUrl?: string;
+  canRegisterPlayer: boolean;
 }
 
 export interface Player {
@@ -209,6 +210,7 @@ interface ClubRow {
   assistant_coach_map_group: string | null;
   assistant_coach_service_unit: string | null;
   assistant_coach_photo_url: string | null;
+  can_register_player: boolean;
   players?: { count: number }[];
 }
 interface PlayerRow {
@@ -300,6 +302,7 @@ function rowToClub(r: ClubRow): Club {
     assistantCoachMapGroup: r.assistant_coach_map_group ?? undefined,
     assistantCoachServiceUnit: r.assistant_coach_service_unit ?? undefined,
     assistantCoachPhotoUrl: r.assistant_coach_photo_url ?? undefined,
+    canRegisterPlayer: r.can_register_player,
     playerCount: r.players?.[0]?.count ?? 0,
   };
 }
@@ -512,6 +515,8 @@ export async function updateClub(
     true,
   );
   setValue("assistant_coach_photo_url", updates.assistantCoachPhotoUrl, true);
+  if (updates.canRegisterPlayer !== undefined)
+    row["can_register_player"] = updates.canRegisterPlayer;
 
   const { error } = await supabase.from("clubs").update(row).eq("id", id);
   if (error) throw error;

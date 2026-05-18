@@ -35,6 +35,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { ChevronDown, Plus, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -529,6 +530,28 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id={`reg-${club.id}`}
+                        checked={club.canRegisterPlayer}
+                        onCheckedChange={(checked) =>
+                          void updateClub(club.id, {
+                            canRegisterPlayer: checked,
+                          })
+                            .then(() =>
+                              qc.invalidateQueries({ queryKey: ["clubs"] }),
+                            )
+                            .catch((err: Error) => toast.error(err.message))
+                        }
+                      />
+                      <label
+                        htmlFor={`reg-${club.id}`}
+                        className="text-xs text-muted-foreground cursor-pointer select-none"
+                      >
+                        Registration{" "}
+                        {club.canRegisterPlayer ? "open" : "closed"}
+                      </label>
+                    </div>
                     <Select
                       value={club.adminId ?? ""}
                       onValueChange={(value) =>

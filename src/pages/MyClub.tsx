@@ -173,6 +173,7 @@ export default function MyClub() {
 
   const saveClub = (e: FormEvent) => {
     e.preventDefault();
+    if (deadline.isClosed) return;
     setSavingClub(true);
     updateClub(club.id, {
       name: editName.trim(),
@@ -243,6 +244,7 @@ export default function MyClub() {
 
   const addPlayer = (e: FormEvent) => {
     e.preventDefault();
+    if (!club.canRegisterPlayer) return;
     if (players.length >= 25) return toast.error("Squad limit (25) reached");
     if (!form.firstName.trim() || !form.lastName.trim())
       return toast.error("First and last name required");
@@ -301,6 +303,8 @@ export default function MyClub() {
 
   const saveEdit = (e: FormEvent) => {
     e.preventDefault();
+    if (deadline.isClosed) return;
+    if (!club.canRegisterPlayer) return;
     if (!editingPlayerId) return;
     if (!editForm.firstName.trim() || !editForm.lastName.trim())
       return toast.error("First and last name required");
@@ -424,12 +428,18 @@ export default function MyClub() {
                 <RefreshCw className="h-4 w-4" />
               </button>
             </div>
-            {deadline.isClosed ? (
+            {deadline.isClosed && (
               <p className="text-sm text-red-600 font-medium">
                 Deadline breached. Please reach out to the admin to pay your
                 fine of ₦25,000.
               </p>
-            ) : (
+            )}
+            {!club.canRegisterPlayer && !deadline.isClosed && (
+              <p className="text-sm text-muted-foreground font-medium">
+                Player registration is not currently open for your club.
+              </p>
+            )}
+            {club.canRegisterPlayer && !deadline.isClosed && (
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
                   <Button disabled={squadFull}>
@@ -797,25 +807,27 @@ export default function MyClub() {
                         Needs update
                       </div>
                     )}
-                    <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          startEditing(p);
-                        }}
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10"
-                        aria-label="Edit"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => removePlayer(p.id)}
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                        aria-label="Remove"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    {!deadline.isClosed && club.canRegisterPlayer && (
+                      <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEditing(p);
+                          }}
+                          className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10"
+                          aria-label="Edit"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => removePlayer(p.id)}
+                          className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          aria-label="Remove"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -956,7 +968,7 @@ export default function MyClub() {
             <div className="sm:col-span-2">
               <Button
                 type="submit"
-                disabled={savingClub || uploading}
+                disabled={savingClub || uploading || deadline.isClosed}
                 className="w-full sm:w-auto"
               >
                 {saveButtonLabel(savingClub, uploading)}
