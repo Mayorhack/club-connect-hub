@@ -179,7 +179,7 @@ export function PlayerCard({
         </button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-4xl p-0 max-h-[90svh] flex flex-col">
+      <DialogContent className="max-w-4xl p-0 max-h-[90svh] flex flex-col overflow-auto">
         <div className={`h-1.5 w-full shrink-0 ${colors.accent}`} />
         <div className="overflow-y-auto flex-1">
           <div className="grid lg:grid-cols-[minmax(0,320px)_1fr]">
