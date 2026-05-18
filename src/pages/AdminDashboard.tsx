@@ -166,6 +166,7 @@ export default function AdminDashboard() {
         foundedYear: year,
         logoUrl: logoBase64 || undefined,
         adminId: adminId || undefined,
+        canRegisterPlayer: true,
       });
 
       if (adminId) {

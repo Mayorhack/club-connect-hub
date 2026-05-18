@@ -428,7 +428,7 @@ export default function MyClub() {
                 <RefreshCw className="h-4 w-4" />
               </button>
             </div>
-            {deadline.isClosed && (
+            {!club.canRegisterPlayer && deadline.isClosed && (
               <p className="text-sm text-red-600 font-medium">
                 Deadline breached. Please reach out to the admin to pay your
                 fine of ₦25,000.
@@ -439,7 +439,7 @@ export default function MyClub() {
                 Player registration is not currently open for your club.
               </p>
             )}
-            {club.canRegisterPlayer && !deadline.isClosed && (
+            {club.canRegisterPlayer && (
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
                   <Button disabled={squadFull}>
@@ -807,7 +807,7 @@ export default function MyClub() {
                         Needs update
                       </div>
                     )}
-                    {!deadline.isClosed && club.canRegisterPlayer && (
+                    {club.canRegisterPlayer && (
                       <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={(e) => {
