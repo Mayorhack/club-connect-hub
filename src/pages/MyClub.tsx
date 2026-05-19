@@ -429,8 +429,10 @@ export default function MyClub() {
             </div>
             {!club.canRegisterPlayer && deadline.isClosed && (
               <p className="text-sm text-red-600 font-medium">
-                Deadline breached. Please reach out to the admin to pay your
-                fine of ₦25,000.
+                {/* Deadline breached. Please reach out to the admin to pay your
+                fine of ₦25,000. */}
+                Player registration closed. Please contact the super admin for
+                assistance.
               </p>
             )}
             {!club.canRegisterPlayer && !deadline.isClosed && (
