@@ -351,7 +351,7 @@ function HeroCarousel({
           <img
             src={s.image}
             alt={s.title}
-            className="w-full h-full object-cover sm:object-top"
+            className="w-full h-full object-cover object-top sm:object-top "
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
         </div>
