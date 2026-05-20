@@ -29,26 +29,32 @@ import {
 } from "lucide-react";
 import { PositionBadge } from "@/components/PositionBadge";
 import crustMfbWhiteLogo from "@/assets/crust mfb (white).png";
+import fruitylifeLogo from "@/assets/fruitylife.png";
 import lakeside2 from "@/assets/lakeside2.jpeg";
 import lakeside3 from "@/assets/lakeside3.jpeg";
 import lakeside4 from "@/assets/lakeside4.jpeg";
 import lakeside from "@/assets/lakeside.jpg";
+import apostle1 from "@/assets/741A5448.jpg";
+import apostle2 from "@/assets/741A5452.jpg";
+import apostle3 from "@/assets/741A5456.jpg";
 import Logo from "@/components/logo";
 
 const HERO_SLIDES = [
   {
-    image: lakeside,
+    image: apostle3,
     title: "Welcome to PIE Football Cup",
     desc: "Celebration Church International's premier football competition. Browse participating clubs, explore full squads, and follow your favourite players.",
     cta1: { text: "Browse clubs", href: "#clubs" },
     cta2: { text: "Join as a club admin", href: "/signup" },
+    mobileOnly: true,
   },
   {
-    image: lakeside2,
+    image: apostle2,
     title: "Lead your CCI Football Cup team",
     desc: "Club admins can add players, track positions, and keep everything organized for your PIE Cup squad.",
     cta1: { text: "View clubs", href: "#clubs" },
     cta2: { text: "Register your club", href: "/signup" },
+    mobileOnly: false,
   },
   {
     image: lakeside3,
@@ -56,6 +62,7 @@ const HERO_SLIDES = [
     desc: "Explore player profiles from across the PIE Cup with detailed stats, positions, and club information.",
     cta1: { text: "Find players", href: "#clubs" },
     cta2: { text: "Create account", href: "/signup" },
+    mobileOnly: false,
   },
   {
     image: lakeside4,
@@ -63,6 +70,7 @@ const HERO_SLIDES = [
     desc: "Register your club for Celebration Church International's flagship football competition and showcase your squad's strength.",
     cta1: { text: "View clubs", href: "#clubs" },
     cta2: { text: "Register now", href: "/signup" },
+    mobileOnly: false,
   },
   {
     image: lakeside,
@@ -70,6 +78,7 @@ const HERO_SLIDES = [
     desc: "Connect with clubs, players, and teams across Celebration Church International's football network.",
     cta1: { text: "Browse clubs", href: "#clubs" },
     cta2: { text: "Get started", href: "/signup" },
+    mobileOnly: false,
   },
 ];
 
@@ -83,6 +92,25 @@ const FEATURES = [
     icon: Star,
     title: "Player Profiles",
     desc: "Detailed cards with jersey numbers, positions, physical stats, and more — all in one place.",
+  },
+];
+
+const SPONSORS = [
+  {
+    name: "Crust Microfinance Bank",
+    logo: crustMfbWhiteLogo,
+    tier: "gold",
+    description: "Official Sponsor",
+    appreciation:
+      "We acknowledge Crust Microfinance Bank for supporting the PIE Football Cup and helping us create a stronger competition experience for clubs, players, and supporters.",
+  },
+  {
+    name: "FruityLife",
+    logo: fruitylifeLogo,
+    tier: "silver",
+    description: "Silver Partner",
+    appreciation:
+      "We thank FruityLife for their continued partnership and support of the PIE Football Cup.",
   },
 ];
 
@@ -312,7 +340,7 @@ function HeroCarousel({
   const slide = slides[idx];
 
   return (
-    <div className="relative w-full h-[500px] sm:h-[720px] overflow-hidden">
+    <div className="relative w-full h-[500px] sm:h-[800px] overflow-hidden">
       {/* Background image with overlay */}
       {slides.map((s, i) => (
         <div
@@ -323,29 +351,29 @@ function HeroCarousel({
           <img
             src={s.image}
             alt={s.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover sm:object-top"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
         </div>
       ))}
 
       {/* Content */}
-      <div className="relative h-full container sm:mt-0 mt-12 flex items-center">
+      <div className="relative h-full container sm:mt-0 mt-8 flex items-center">
         <div key={idx} className="max-w-lg z-10">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium tracking-wide uppercase mb-6 text-white anim-fade-in">
             <div className="h-1.5 w-1.5 rounded-full  bg-white animate-pulse" />
             PIE Cup — Season 2026
           </div>
 
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight text-white anim-fade-up anim-delay-100">
+          <h1 className="text-2xl sm:text-6xl font-extrabold tracking-tight leading-tight text-white anim-fade-up anim-delay-100">
             {slide.title}
           </h1>
 
-          <p className="mt-4 text-base sm:text-lg text-white/90 leading-relaxed anim-fade-up anim-delay-200">
+          <p className="mt-4 text-sm sm:text-lg text-white/90 leading-relaxed anim-fade-up anim-delay-200">
             {slide.desc}
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-3 anim-fade-up anim-delay-300">
+          <div className=" hidden mt-8 md:flex flex-wrap gap-3 anim-fade-up anim-delay-300">
             <a
               href={slide.cta1.href}
               className="inline-flex items-center gap-2 rounded-lg bg-white text-black font-semibold px-5 py-2.5 text-sm shadow hover:opacity-90 transition"
@@ -489,6 +517,126 @@ function ClubSpotlight({
         />
       </div>
     </Link>
+  );
+}
+
+// ── Sponsor card (full-width) ────────────────────────────────────────────────
+function SponsorCard({
+  sponsor,
+}: Readonly<{
+  sponsor: {
+    name: string;
+    logo: string;
+    tier: string;
+    description: string;
+    appreciation: string;
+  };
+}>) {
+  const isGold = sponsor.tier === "gold";
+  return (
+    <div
+      className={`${
+        isGold
+          ? "bg-[radial-gradient(circle_at_top_left,_rgba(235,179,66,0.18),_transparent_40%),linear-gradient(135deg,#111827,#0f172a_55%,#1f2937)] text-white"
+          : "bg-[radial-gradient(circle_at_bottom_right,_rgba(168,85,247,0.12),_transparent_40%),linear-gradient(135deg,#1a1a2e,#16213e_55%,#0f3460)] text-white"
+      } w-full`}
+    >
+      <div className="container grid gap-8 py-12 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
+        <div>
+          <p
+            className={`text-xs font-semibold uppercase tracking-[0.28em] ${
+              isGold ? "text-amber-200/90" : "text-purple-300/90"
+            }`}
+          >
+            {sponsor.description}
+          </p>
+          <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
+            Proudly supported by {sponsor.name}.
+          </h2>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-200 sm:text-base">
+            {sponsor.appreciation}
+          </p>
+        </div>
+
+        <div className="rounded-3xl border border-white/15 bg-white/8 p-8 backdrop-blur-sm shadow-2xl">
+          <div className="flex min-h-40 items-center justify-center rounded-2xl border border-dashed border-white/15 bg-black/20 p-6">
+            <img
+              src={sponsor.logo}
+              alt={sponsor.name}
+              className="max-h-20 w-full object-contain"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Sponsors carousel (endless scroll) ────────────────────────────────────────
+function SponsorsCarousel({
+  sponsors,
+}: Readonly<{
+  sponsors: Array<{
+    name: string;
+    logo: string;
+    tier: string;
+    description: string;
+    appreciation: string;
+  }>;
+}>) {
+  const { idx, prev, next } = useSlider(sponsors.length);
+  const sponsor = sponsors[idx];
+
+  return (
+    <div className="border-b border-border overflow-hidden">
+      <div
+        className="transition-all duration-500 ease-out"
+        style={{
+          transform: `translateX(-${idx * 100}%)`,
+        }}
+      >
+        <div className="flex">
+          {sponsors.map((sp) => (
+            <div key={`sponsor-${sp.name}`} className="w-full flex-shrink-0">
+              <SponsorCard sponsor={sp} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Navigation */}
+      {sponsors.length > 1 && (
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/30">
+          <button
+            onClick={prev}
+            className="p-2 rounded-lg border border-border bg-card hover:bg-muted transition"
+            aria-label="Previous sponsor"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+
+          <div className="flex gap-2">
+            {sponsors.map((_, i) => (
+              <div
+                key={`dot-${i}`}
+                className={`h-2 rounded-full transition-all ${
+                  i === idx ? "w-5 bg-primary" : "w-2 bg-border"
+                }`}
+                aria-label={`Sponsor ${i + 1}`}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={next}
+            className="p-2 rounded-lg border border-border bg-card hover:bg-muted transition"
+            aria-label="Next sponsor"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -668,36 +816,8 @@ const Index = () => {
         </div>
       </section>
 
-      <section className="border-b border-border bg-[radial-gradient(circle_at_top_left,_rgba(235,179,66,0.18),_transparent_40%),linear-gradient(135deg,#111827,#0f172a_55%,#1f2937)] text-white">
-        <div className="container grid gap-8 py-12 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-200/90">
-              Our Sponsors
-            </p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
-              Proudly supported by our sponsor.
-            </h2>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-200 sm:text-base">
-              We acknowledge Crust Microfinance Bank for supporting the PIE
-              Football Cup and helping us create a stronger competition
-              experience for clubs, players, and supporters.
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-white/15 bg-white/8 p-8 backdrop-blur-sm shadow-2xl">
-            <div className="flex min-h-40 items-center justify-center rounded-2xl border border-dashed border-white/15 bg-black/20 p-6">
-              <img
-                src={crustMfbWhiteLogo}
-                alt="Crust Microfinance Bank"
-                className="max-h-20 w-full object-contain"
-              />
-            </div>
-            <p className="mt-4 text-center text-xs uppercase tracking-[0.24em] text-slate-300">
-              Official sponsor
-            </p>
-          </div>
-        </div>
-      </section>
+      {/* ── Sponsors carousel (endless scroll) ── */}
+      <SponsorsCarousel sponsors={SPONSORS} />
 
       {/* ── Upcoming fixtures ── */}
       <section className="border-b border-border bg-background">
