@@ -877,8 +877,7 @@ const Index = () => {
             items={teamWatchClubs}
             title="Teams to Watch"
             subtitle="Clubs with the highest goals scored"
-            icon={Logo}
-            visibleCount={3}
+            visibleCount={4}
             renderSlide={(club) => (
               <ClubSpotlight
                 club={club}
