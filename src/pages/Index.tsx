@@ -653,7 +653,7 @@ function Slider<T>({
   renderSlide: (item: T, index: number) => React.ReactNode;
   title: string;
   subtitle: string;
-  icon: React.ElementType;
+  icon?: React.ElementType;
   visibleCount?: number;
 }>) {
   const pages = Math.ceil(items.length / visibleCount);
@@ -672,10 +672,12 @@ function Slider<T>({
       <div className="flex items-end justify-between mb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Icon
-              className="h-5 w-5"
-              style={{ color: "hsl(var(--primary))" }}
-            />
+            {Icon && (
+              <Icon
+                className="h-5 w-5"
+                style={{ color: "hsl(var(--primary))" }}
+              />
+            )}
             <h2 className="text-2xl font-bold">{title}</h2>
           </div>
           <p className="text-sm text-muted-foreground">{subtitle}</p>
