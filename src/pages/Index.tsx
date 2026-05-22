@@ -41,9 +41,8 @@ import Logo from "@/components/logo";
 import ubiLogo from "@/assets/ubi.png";
 import bdiLogo from "@/assets/bdi.jpeg";
 import kazoLogo from "@/assets/kazo.jpeg";
-import theCaveLogo from "@/assets/the-cave-3.jpeg";
-import landRepublicLogo from "@/assets/land-republic.PNG";
-
+import theCaveLogo from "@/assets/the-cave.jpeg";
+import landRepublicLogo from "@/assets/land-republic.png";
 
 const HERO_SLIDES = [
   {
@@ -118,10 +117,12 @@ const SPONSORS = [
     appreciation:
       "We thank FruityLife for their continued partnership and support of the PIE Football Cup.",
   },
+];
+const otherSponsors = [
   {
     name: "UBI",
     logo: ubiLogo,
-    tier: "gold",
+    tier: "bronze",
     description: "Official Sponsor",
     appreciation:
       "We acknowledge UBI for supporting the PIE Football Cup and helping us fuel our athletes and community.",
@@ -129,7 +130,7 @@ const SPONSORS = [
   {
     name: "BDI",
     logo: bdiLogo,
-    tier: "gold",
+    tier: "bronze",
     description: "Official Sponsor",
     appreciation:
       "We thank BDI for their exceptional partnership and contribution to the development and success of the PIE Football Cup.",
@@ -137,7 +138,7 @@ const SPONSORS = [
   {
     name: "Kazo",
     logo: kazoLogo,
-    tier: "silver",
+    tier: "bronze",
     description: "Official Partner",
     appreciation:
       "We appreciate Kazo for partnering with us to deliver an exciting and energy-packed tournament.",
@@ -145,7 +146,7 @@ const SPONSORS = [
   {
     name: "The Cave",
     logo: theCaveLogo,
-    tier: "silver",
+    tier: "bronze",
     description: "Official Partner",
     appreciation:
       "We are grateful to The Cave for their sponsorship and dedication to supporting our local sports community.",
@@ -153,12 +154,11 @@ const SPONSORS = [
   {
     name: "Land Republic",
     logo: landRepublicLogo,
-    tier: "gold",
+    tier: "bronze",
     description: "Official Sponsor",
     appreciation:
       "We thank Land Republic for their valuable partnership and support in making the PIE Football Cup a success.",
   },
-  
 ];
 
 function formatFixtureDate(dateIso: string): string {
@@ -619,6 +619,46 @@ function SponsorCard({
   );
 }
 
+// ── Other sponsors auto-scroll strip ─────────────────────────────────────────
+function OtherSponsorsStrip({
+  sponsors,
+}: Readonly<{
+  sponsors: Array<{ name: string; logo: string }>;
+}>) {
+  // Duplicate the list so the strip loops seamlessly
+  const doubled = [...sponsors, ...sponsors, ...sponsors];
+  return (
+    <div className="border-b border-border bg-muted/30 py-5 overflow-hidden">
+      <div
+        className="flex gap-12 items-center"
+        style={{
+          width: "max-content",
+          animation: `marquee ${sponsors.length * 4}s linear infinite`,
+        }}
+      >
+        {doubled.map((sp, i) => (
+          <div
+            key={`strip-${sp.name}-${i}`}
+            className="flex-shrink-0 h-14 w-28 flex items-center justify-center px-2"
+          >
+            <img
+              src={sp.logo}
+              alt={sp.name}
+              className="max-h-full max-w-full object-contain  opacity-100 hover:scale-105 transition-all duration-300"
+            />
+          </div>
+        ))}
+      </div>
+      <style>{`
+        @keyframes marquee {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // ── Sponsors carousel (endless scroll) ────────────────────────────────────────
 function SponsorsCarousel({
   sponsors,
@@ -867,6 +907,9 @@ const Index = () => {
 
       {/* ── Sponsors carousel (endless scroll) ── */}
       <SponsorsCarousel sponsors={SPONSORS} />
+
+      {/* ── Other sponsors logo strip ── */}
+      <OtherSponsorsStrip sponsors={otherSponsors} />
 
       {/* ── Upcoming fixtures ── */}
       <section className="border-b border-border bg-background">
