@@ -38,6 +38,12 @@ import apostle1 from "@/assets/741A5448.jpg";
 import apostle2 from "@/assets/741A5452.jpg";
 import apostle3 from "@/assets/741A5456.jpg";
 import Logo from "@/components/logo";
+import ubiLogo from "@/assets/ubi.png";
+import bdiLogo from "@/assets/bdi.jpeg";
+import kazoLogo from "@/assets/kazo.jpeg";
+import theCaveLogo from "@/assets/the-cave-3.jpeg";
+import landRepublicLogo from "@/assets/land-republic.PNG";
+
 
 const HERO_SLIDES = [
   {
@@ -112,6 +118,47 @@ const SPONSORS = [
     appreciation:
       "We thank FruityLife for their continued partnership and support of the PIE Football Cup.",
   },
+  {
+    name: "UBI",
+    logo: ubiLogo,
+    tier: "gold",
+    description: "Official Sponsor",
+    appreciation:
+      "We acknowledge UBI for supporting the PIE Football Cup and helping us fuel our athletes and community.",
+  },
+  {
+    name: "BDI",
+    logo: bdiLogo,
+    tier: "gold",
+    description: "Official Sponsor",
+    appreciation:
+      "We thank BDI for their exceptional partnership and contribution to the development and success of the PIE Football Cup.",
+  },
+  {
+    name: "Kazo",
+    logo: kazoLogo,
+    tier: "silver",
+    description: "Official Partner",
+    appreciation:
+      "We appreciate Kazo for partnering with us to deliver an exciting and energy-packed tournament.",
+  },
+  {
+    name: "The Cave",
+    logo: theCaveLogo,
+    tier: "silver",
+    description: "Official Partner",
+    appreciation:
+      "We are grateful to The Cave for their sponsorship and dedication to supporting our local sports community.",
+  },
+  {
+    name: "Land Republic",
+    logo: landRepublicLogo,
+    tier: "gold",
+    description: "Official Sponsor",
+    appreciation:
+      "We thank Land Republic for their valuable partnership and support in making the PIE Football Cup a success.",
+  },
+  
 ];
 
 function formatFixtureDate(dateIso: string): string {
