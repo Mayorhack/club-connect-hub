@@ -42,7 +42,7 @@ import ubiLogo from "@/assets/ubi.png";
 import bdiLogo from "@/assets/bdi.jpeg";
 import kazoLogo from "@/assets/kazo.jpeg";
 import theCaveLogo from "@/assets/the-cave.jpeg";
-import landRepublicLogo from "@/assets/land-republic.png";
+import landRepublicLogo from "@/assets/land-republic.PNG";
 
 const HERO_SLIDES = [
   {
