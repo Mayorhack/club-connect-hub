@@ -87,6 +87,12 @@ const HERO_SLIDES = [
   },
 ];
 
+const MATCHDAY_ONE_IMAGE_URLS: string[] = [
+  "https://res.cloudinary.com/dny1ylokp/image/upload/v1779452550/AJAH_vs_LAGOS_ISLAND_o0c2u1.png",
+  "https://res.cloudinary.com/dny1ylokp/image/upload/v1779452549/AGO_vs_YABA_n0jq8g.png",
+  "https://res.cloudinary.com/dny1ylokp/image/upload/v1779452544/IKORODU_vs_IKEJA_njvvvu.png",
+];
+
 const FEATURES = [
   {
     icon: Shield,
@@ -393,7 +399,7 @@ function HeroCarousel({
         <div
           key={`slide-${i}-${s.title}`}
           className="absolute inset-0 transition-opacity duration-700"
-          style={{ opacity: i === idx ? 1 : 0 }}
+          style={{ opacity: i === idx ? 1 : 0, zIndex: i === idx ? 2 : 1 }}
         >
           <img
             src={s.image}
@@ -626,7 +632,7 @@ function OtherSponsorsStrip({
   sponsors: Array<{ name: string; logo: string }>;
 }>) {
   // Duplicate the list so the strip loops seamlessly
-  const doubled = [...sponsors, ...sponsors, ...sponsors];
+  const doubled = [...sponsors, ...sponsors];
   return (
     <div className="border-b border-border bg-muted/30 py-5 overflow-hidden">
       <div
@@ -639,7 +645,7 @@ function OtherSponsorsStrip({
         {doubled.map((sp, i) => (
           <div
             key={`strip-${sp.name}-${i}`}
-            className="flex-shrink-0 h-14 w-28 flex items-center justify-center px-2"
+            className="flex-shrink-0 h-14 w-40 flex items-center justify-center px-2"
           >
             <img
               src={sp.logo}
@@ -672,7 +678,6 @@ function SponsorsCarousel({
   }>;
 }>) {
   const { idx, prev, next } = useSlider(sponsors.length);
-  const sponsor = sponsors[idx];
 
   return (
     <div className="border-b border-border overflow-hidden">
@@ -703,15 +708,18 @@ function SponsorsCarousel({
           </button>
 
           <div className="flex gap-2">
-            {sponsors.map((_, i) => (
-              <div
-                key={`dot-${i}`}
-                className={`h-2 rounded-full transition-all ${
-                  i === idx ? "w-5 bg-primary" : "w-2 bg-border"
-                }`}
-                aria-label={`Sponsor ${i + 1}`}
-              />
-            ))}
+            {sponsors.map((sp) => {
+              const isActive = sponsors[idx]?.name === sp.name;
+              return (
+                <div
+                  key={`dot-${sp.name}`}
+                  className={`h-2 rounded-full transition-all ${
+                    isActive ? "w-5 bg-primary" : "w-2 bg-border"
+                  }`}
+                  aria-label={`Sponsor ${sp.name}`}
+                />
+              );
+            })}
           </div>
 
           <button
@@ -724,6 +732,86 @@ function SponsorsCarousel({
         </div>
       )}
     </div>
+  );
+}
+
+function MatchDayModal({
+  open,
+  onOpenChange,
+  imageUrls,
+}: Readonly<{
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  imageUrls: string[];
+}>) {
+  const { idx, prev, next, setIdx } = useSlider(imageUrls.length, open);
+
+  if (imageUrls.length === 0) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl p-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-0">
+          <DialogTitle className="text-2xl font-bold">MatchDay 1</DialogTitle>
+        </DialogHeader>
+
+        <div className="px-6 pb-6 pt-4">
+          <div className="relative h-[580px] sm:h-[580px] overflow-hidden rounded-xl bg-muted">
+            {imageUrls.map((url, i) => (
+              <div
+                key={`matchday-slide-${url}`}
+                className="absolute inset-0 transition-opacity duration-700"
+                style={{
+                  opacity: i === idx ? 1 : 0,
+                  zIndex: i === idx ? 2 : 1,
+                }}
+              >
+                <img
+                  src={url}
+                  alt={`MatchDay 1 slide ${i + 1}`}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            ))}
+          </div>
+
+          {imageUrls.length > 1 && (
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <button
+                onClick={prev}
+                className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-3 py-1.5 text-sm hover:bg-muted transition"
+                aria-label="Previous matchday image"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Prev
+              </button>
+
+              <div className="flex gap-2">
+                {imageUrls.map((url, i) => (
+                  <button
+                    key={`matchday-dot-${url}`}
+                    onClick={() => setIdx(i)}
+                    className={`h-2 rounded-full transition-all ${
+                      i === idx ? "w-6 bg-primary" : "w-2 bg-border"
+                    }`}
+                    aria-label={`Go to matchday image ${i + 1}`}
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={next}
+                className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-3 py-1.5 text-sm hover:bg-muted transition"
+                aria-label="Next matchday image"
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -812,6 +900,8 @@ function Slider<T>({
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 const Index = () => {
+  const [isMatchDayModalOpen, setIsMatchDayModalOpen] = useState(false);
+
   const { data: clubs = [] } = useQuery({
     queryKey: ["clubs"],
     queryFn: getClubs,
@@ -825,13 +915,25 @@ const Index = () => {
     queryKey: ["fixtures"],
     queryFn: getFixtures,
   });
-  // const { data: totals = { totalClubs: 0, totalPlayers: 0 } } = useQuery({
-  //   queryKey: ["totals"],
-  //   queryFn: getTotals,
-  // });
 
   const clubMap = Object.fromEntries(clubs.map((c) => [c.id, c]));
   const featuresContainerRef = useRevealContainer();
+
+  useEffect(() => {
+    const storageKey = "matchday-1-modal-last-seen";
+    const today = new Date().toISOString().slice(0, 10);
+
+    try {
+      const lastSeen = localStorage.getItem(storageKey);
+      if (lastSeen !== today) {
+        setIsMatchDayModalOpen(true);
+        localStorage.setItem(storageKey, today);
+      }
+    } catch {
+      // If storage is unavailable, still show the modal for this session.
+      setIsMatchDayModalOpen(true);
+    }
+  }, []);
 
   const spotlightPlayers = topScorers;
 
@@ -872,6 +974,12 @@ const Index = () => {
 
   return (
     <Layout>
+      <MatchDayModal
+        open={isMatchDayModalOpen}
+        onOpenChange={setIsMatchDayModalOpen}
+        imageUrls={MATCHDAY_ONE_IMAGE_URLS}
+      />
+
       {/* ── Hero Carousel ── */}
       <section className="relative overflow-hidden border-b border-border bg-black">
         <HeroCarousel slides={HERO_SLIDES} clubsCount={7} totalPlayers={175} />
