@@ -319,14 +319,15 @@ export default function CompetitionCenter() {
                   </tr>
                 </thead>
                 <tbody>
-                  {table.map((row, idx) => (
+                  {rankedTable.map((row, idx) => (
                     <tr
                       key={row.clubId}
                       className="border-b border-border/60 last:border-b-0"
                     >
                       <td className="py-2 pr-2">{idx + 1}</td>
                       <td className="py-2 pr-2 font-medium whitespace-nowrap">
-                        {clubMap.get(row.clubId)?.name ?? "Unknown"}
+                        {clubMap.get(row.clubId)?.name ?? "Unknown"} (
+                        {clubMap.get(row.clubId)?.cciBranch ?? "N/A"})
                       </td>
                       <td className="py-2 text-center">{row.played}</td>
                       <td className="py-2 text-center">{row.won}</td>
@@ -342,7 +343,7 @@ export default function CompetitionCenter() {
               </table>
             </div>
 
-            {table.length === 0 && (
+            {rankedTable.length === 0 && (
               <p className="text-sm text-muted-foreground">
                 No clubs available yet.
               </p>
