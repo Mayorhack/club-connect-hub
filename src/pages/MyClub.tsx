@@ -278,6 +278,10 @@ export default function MyClub() {
   };
 
   const removePlayer = (id: string) => {
+    if (!club.canRegisterPlayer) {
+      toast.error("Player editing is currently disabled for your club.");
+      return;
+    }
     if (!confirm("Remove this player?")) return;
     deletePlayer(id)
       .then(() => qc.invalidateQueries({ queryKey: ["players", user?.clubId] }))
@@ -285,6 +289,10 @@ export default function MyClub() {
   };
 
   const startEditing = (p: Player) => {
+    if (!club.canRegisterPlayer) {
+      toast.error("Player editing is currently disabled for your club.");
+      return;
+    }
     setEditingPlayerId(p.id);
     setEditForm({
       firstName: p.firstName,
