@@ -756,7 +756,7 @@ function MatchDayModal({
         </DialogHeader>
 
         <div className="px-6 pb-6 pt-4">
-          <div className="relative h-[580px] sm:h-[580px] overflow-hidden rounded-xl bg-muted">
+          <div className="relative h-[90vh] sm:h-[580px] overflow-hidden rounded-xl bg-muted">
             {imageUrls.map((url, i) => (
               <div
                 key={`matchday-slide-${url}`}
