@@ -926,12 +926,12 @@ const Index = () => {
     try {
       const lastSeen = localStorage.getItem(storageKey);
       if (lastSeen !== today) {
-        setIsMatchDayModalOpen(true);
+        setIsMatchDayModalOpen(false);
         localStorage.setItem(storageKey, today);
       }
     } catch {
       // If storage is unavailable, still show the modal for this session.
-      setIsMatchDayModalOpen(true);
+      setIsMatchDayModalOpen(false);
     }
   }, []);
 
