@@ -48,6 +48,21 @@ export default function CompetitionCenter() {
     [clubs],
   );
 
+  const groupFixtures = useMemo(
+    () => fixtures.filter((f) => !f.stage || f.stage === "group"),
+    [fixtures],
+  );
+
+  const semiFinalFixtures = useMemo(
+    () => fixtures.filter((f) => f.stage === "semi-final"),
+    [fixtures],
+  );
+
+  const finalFixtures = useMemo(
+    () => fixtures.filter((f) => f.stage === "final"),
+    [fixtures],
+  );
+
   const groupedFixtures = useMemo(() => {
     const byDay = new Map<number, typeof fixtures>();
     fixtures.forEach((fixture) => {
@@ -66,8 +81,8 @@ export default function CompetitionCenter() {
   }, [fixtures]);
 
   const table = useMemo(
-    () => buildLeagueTable(clubs, fixtures),
-    [clubs, fixtures],
+    () => buildLeagueTable(clubs, groupFixtures),
+    [clubs, groupFixtures],
   );
 
   const rankedTable = useMemo(() => {
@@ -227,47 +242,110 @@ export default function CompetitionCenter() {
 
             {readyForSemiFinals ? (
               <div className="space-y-4">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                    Semi-Final 1
-                  </p>
-                  <div className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3 text-sm">
-                    <span className="font-medium truncate">
-                      {semiFinalOne[0]}
-                    </span>
-                    <span className="text-muted-foreground">vs</span>
-                    <span className="font-medium truncate text-right">
-                      {semiFinalOne[1]}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                    Semi-Final 2
-                  </p>
-                  <div className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3 text-sm">
-                    <span className="font-medium truncate">
-                      {semiFinalTwo[0]}
-                    </span>
-                    <span className="text-muted-foreground">vs</span>
-                    <span className="font-medium truncate text-right">
-                      {semiFinalTwo[1]}
-                    </span>
-                  </div>
-                </div>
+                {semiFinalFixtures.length > 0 ? (
+                  semiFinalFixtures.map((fixture, idx) => {
+                    const home =
+                      clubMap.get(fixture.homeClubId)?.name ?? "TBD";
+                    const away =
+                      clubMap.get(fixture.awayClubId)?.name ?? "TBD";
+                    const hasScore =
+                      fixture.homeScore !== undefined &&
+                      fixture.awayScore !== undefined;
+                    return (
+                      <div key={fixture.id}>
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                          Semi-Final {idx + 1}
+                        </p>
+                        <div className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3 text-sm">
+                          <span className="font-medium truncate">{home}</span>
+                          {hasScore ? (
+                            <span className="rounded-md bg-muted px-2 py-0.5 font-semibold">
+                              {fixture.homeScore} - {fixture.awayScore}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">vs</span>
+                          )}
+                          <span className="font-medium truncate text-right">
+                            {away}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                        Semi-Final 1
+                      </p>
+                      <div className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3 text-sm">
+                        <span className="font-medium truncate">
+                          {semiFinalOne[0]}
+                        </span>
+                        <span className="text-muted-foreground">vs</span>
+                        <span className="font-medium truncate text-right">
+                          {semiFinalOne[1]}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                        Semi-Final 2
+                      </p>
+                      <div className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3 text-sm">
+                        <span className="font-medium truncate">
+                          {semiFinalTwo[0]}
+                        </span>
+                        <span className="text-muted-foreground">vs</span>
+                        <span className="font-medium truncate text-right">
+                          {semiFinalTwo[1]}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div>
                   <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
                     Final
                   </p>
-                  <div className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3 text-sm">
-                    <span className="font-medium truncate">Winner SF1</span>
-                    <span className="text-muted-foreground">vs</span>
-                    <span className="font-medium truncate text-right">
-                      Winner SF2
-                    </span>
-                  </div>
+                  {finalFixtures.length > 0 ? (
+                    finalFixtures.map((fixture) => {
+                      const home =
+                        clubMap.get(fixture.homeClubId)?.name ?? "TBD";
+                      const away =
+                        clubMap.get(fixture.awayClubId)?.name ?? "TBD";
+                      const hasScore =
+                        fixture.homeScore !== undefined &&
+                        fixture.awayScore !== undefined;
+                      return (
+                        <div
+                          key={fixture.id}
+                          className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3 text-sm"
+                        >
+                          <span className="font-medium truncate">{home}</span>
+                          {hasScore ? (
+                            <span className="rounded-md bg-muted px-2 py-0.5 font-semibold">
+                              {fixture.homeScore} - {fixture.awayScore}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">vs</span>
+                          )}
+                          <span className="font-medium truncate text-right">
+                            {away}
+                          </span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3 text-sm">
+                      <span className="font-medium truncate">Winner SF1</span>
+                      <span className="text-muted-foreground">vs</span>
+                      <span className="font-medium truncate text-right">
+                        Winner SF2
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">

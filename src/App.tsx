@@ -11,6 +11,7 @@ import Login from "./pages/Login.tsx";
 import Signup from "./pages/Signup.tsx";
 import AdminDashboard from "./pages/AdminDashboard.tsx";
 import MyClub from "./pages/MyClub.tsx";
+import Memories from "./pages/Memories.tsx";
 import { AuthProvider } from "./lib/auth";
 import { ThemeProvider } from "./lib/theme";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -56,6 +57,7 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route path="/memories" element={<Memories />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

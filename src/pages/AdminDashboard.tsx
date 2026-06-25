@@ -94,6 +94,7 @@ export default function AdminDashboard() {
   const [fixtureVenue, setFixtureVenue] = useState("");
   const [fixtureVenueMapsUrl, setFixtureVenueMapsUrl] = useState("");
   const [fixtureVenueDirections, setFixtureVenueDirections] = useState("");
+  const [fixtureStage, setFixtureStage] = useState<"group" | "semi-final" | "final">("group");
 
   function handleLogoUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -246,6 +247,7 @@ export default function AdminDashboard() {
         venue: fixtureVenue.trim() || undefined,
         venueMapsUrl: fixtureVenueMapsUrl.trim() || undefined,
         venueDirections: fixtureVenueDirections.trim() || undefined,
+        stage: fixtureStage,
       });
       toast.success("Fixture created");
       setFixtureOpen(false);
@@ -256,6 +258,7 @@ export default function AdminDashboard() {
       setFixtureVenue("");
       setFixtureVenueMapsUrl("");
       setFixtureVenueDirections("");
+      setFixtureStage("group");
       await invalidateDashboard();
     } catch (error) {
       toast.error((error as Error).message);
@@ -738,6 +741,24 @@ export default function AdminDashboard() {
                       }
                       placeholder="e.g. Enter through the main gate, turn left..."
                     />
+                  </div>
+                  <div>
+                    <Label>Stage</Label>
+                    <Select
+                      value={fixtureStage}
+                      onValueChange={(v) =>
+                        setFixtureStage(v as "group" | "semi-final" | "final")
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="group">Group Stage</SelectItem>
+                        <SelectItem value="semi-final">Semi-Final</SelectItem>
+                        <SelectItem value="final">Final</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <Button
                     type="submit"

@@ -151,6 +151,7 @@ export interface MatchFixture {
   venue?: string;
   venueMapsUrl?: string;
   venueDirections?: string;
+  stage?: string;
 }
 
 export interface MatchGoal {
@@ -159,6 +160,14 @@ export interface MatchGoal {
   playerId: string;
   clubId: string;
   goals: number;
+}
+
+export interface Memory {
+  id: string;
+  imageUrl: string;
+  caption?: string;
+  uploaderName?: string;
+  createdAt: string;
 }
 
 export interface LeagueTableRow {
@@ -241,6 +250,7 @@ interface MatchFixtureRow {
   venue: string | null;
   venue_maps_url: string | null;
   venue_directions: string | null;
+  stage: string | null;
 }
 
 interface MatchGoalRow {
@@ -249,6 +259,14 @@ interface MatchGoalRow {
   player_id: string;
   club_id: string;
   goals: number;
+}
+
+interface MemoryRow {
+  id: string;
+  image_url: string;
+  caption: string | null;
+  uploader_name: string | null;
+  created_at: string;
 }
 
 type SupabaseLikeError = {
@@ -356,6 +374,7 @@ function rowToFixture(r: MatchFixtureRow): MatchFixture {
     venue: r.venue ?? undefined,
     venueMapsUrl: r.venue_maps_url ?? undefined,
     venueDirections: r.venue_directions ?? undefined,
+    stage: r.stage ?? "group",
   };
 }
 
@@ -366,6 +385,16 @@ function rowToGoal(r: MatchGoalRow): MatchGoal {
     playerId: r.player_id,
     clubId: r.club_id,
     goals: r.goals,
+  };
+}
+
+function rowToMemory(r: MemoryRow): Memory {
+  return {
+    id: r.id,
+    imageUrl: r.image_url,
+    caption: r.caption ?? undefined,
+    uploaderName: r.uploader_name ?? undefined,
+    createdAt: r.created_at,
   };
 }
 
@@ -635,6 +664,7 @@ export async function createFixture(
       venue: fixture.venue ?? null,
       venue_maps_url: fixture.venueMapsUrl ?? null,
       venue_directions: fixture.venueDirections ?? null,
+      stage: fixture.stage ?? "group",
     })
     .select()
     .single();
@@ -663,6 +693,7 @@ export async function updateFixture(
     row.venue_maps_url = updates.venueMapsUrl ?? null;
   if (updates.venueDirections !== undefined)
     row.venue_directions = updates.venueDirections ?? null;
+  if (updates.stage !== undefined) row.stage = updates.stage;
   const { error } = await supabase.from("fixtures").update(row).eq("id", id);
   if (error) {
     if (isMissingTableError(error, "fixtures")) {
@@ -714,6 +745,38 @@ export async function setMatchPlayerGoals(
     }
     throw insertError;
   }
+}
+
+// ── Memory mutations ──────────────────────────────────────────────────────────
+
+export async function getMemories(): Promise<Memory[]> {
+  const { data, error } = await supabase
+    .from("memories")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return ((data ?? []) as MemoryRow[]).map(rowToMemory);
+}
+
+export async function createMemory(
+  memory: Pick<Memory, "imageUrl" | "caption" | "uploaderName">,
+): Promise<Memory> {
+  const { data, error } = await supabase
+    .from("memories")
+    .insert({
+      image_url: memory.imageUrl,
+      caption: memory.caption ?? null,
+      uploader_name: memory.uploaderName ?? null,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToMemory(data as MemoryRow);
+}
+
+export async function deleteMemory(id: string): Promise<void> {
+  const { error } = await supabase.from("memories").delete().eq("id", id);
+  if (error) throw error;
 }
 
 // ── Profile mutations ─────────────────────────────────────────────────────────
