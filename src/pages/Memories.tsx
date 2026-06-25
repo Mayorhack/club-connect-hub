@@ -45,11 +45,11 @@ export default function Memories() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [searchParams] = useSearchParams();
+  const [captureDialogOpen, setCaptureDialogOpen] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("capture") === "auto") {
-      const t = setTimeout(() => cameraInputRef.current?.click(), 300);
-      return () => clearTimeout(t);
+      setCaptureDialogOpen(true);
     }
   }, [searchParams]);
 
@@ -415,6 +415,46 @@ export default function Memories() {
           )}
         </section>
       </div>
+
+      {/* ── Capture dialog ── */}
+      {captureDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-card border border-border overflow-hidden shadow-2xl">
+            <div className="h-1 w-full" style={{ background: "var(--gradient-pitch)" }} />
+            <div className="p-6 text-center space-y-4">
+              <div
+                className="mx-auto flex h-16 w-16 items-center justify-center rounded-full shadow-lg shadow-primary/30"
+                style={{ background: "var(--gradient-pitch)" }}
+              >
+                <Camera className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold">Capture a Memory</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Take a live photo right now and share it with everyone at the PIE Cup.
+                </p>
+              </div>
+              <Button
+                className="w-full"
+                style={{ background: "var(--gradient-pitch)" }}
+                onClick={() => {
+                  setCaptureDialogOpen(false);
+                  cameraInputRef.current?.click();
+                }}
+              >
+                <Camera className="h-4 w-4 mr-2" />
+                Open Camera
+              </Button>
+              <button
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setCaptureDialogOpen(false)}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
