@@ -1,4 +1,5 @@
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, ImagePlus, Sparkles, Upload, X } from "lucide-react";
 import { toast } from "sonner";
@@ -42,6 +43,15 @@ export default function Memories() {
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("capture") === "auto") {
+      const t = setTimeout(() => cameraInputRef.current?.click(), 300);
+      return () => clearTimeout(t);
+    }
+  }, [searchParams]);
 
   function pickFile(file: File) {
     if (!file.type.startsWith("image/")) {
@@ -200,37 +210,82 @@ export default function Memories() {
                   </button>
                 </div>
               ) : (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={handleDrop}
-                  className={`flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed p-12 cursor-pointer transition-all duration-200 ${
-                    isDragging
-                      ? "border-primary bg-primary/5 scale-[1.01]"
-                      : "border-border hover:border-primary/50 hover:bg-muted/20"
-                  }`}
-                >
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-                    <Upload className="h-6 w-6 text-muted-foreground" />
+                <>
+                  {/* ── Mobile: camera-first UI ── */}
+                  <div className="sm:hidden space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => cameraInputRef.current?.click()}
+                      className="w-full flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-primary/30 bg-primary/5 py-10 px-6 active:scale-[0.98] transition-all"
+                    >
+                      <div
+                        className="flex h-20 w-20 items-center justify-center rounded-full shadow-lg shadow-primary/30"
+                        style={{ background: "var(--gradient-pitch)" }}
+                      >
+                        <Camera className="h-10 w-10 text-white" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-base font-semibold">Take a photo</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Opens your camera
+                        </p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-muted/30 py-3 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+                    >
+                      <ImagePlus className="h-4 w-4" />
+                      Choose from gallery
+                    </button>
                   </div>
-                  <div className="text-center">
-                    <p className="text-sm font-semibold">
-                      Drop a photo here or{" "}
-                      <span className="text-primary underline-offset-2 hover:underline">
-                        browse
-                      </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      PNG, JPG, WebP · max 10 MB
-                    </p>
+
+                  {/* ── Desktop: drag-and-drop zone ── */}
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    className={`hidden sm:flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed p-12 cursor-pointer transition-all duration-200 ${
+                      isDragging
+                        ? "border-primary bg-primary/5 scale-[1.01]"
+                        : "border-border hover:border-primary/50 hover:bg-muted/20"
+                    }`}
+                  >
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+                      <Upload className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold">
+                        Drop a photo here or{" "}
+                        <span className="text-primary underline-offset-2 hover:underline">
+                          browse
+                        </span>
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        PNG, JPG, WebP · max 10 MB
+                      </p>
+                    </div>
                   </div>
-                </div>
+                </>
               )}
 
+              {/* Camera capture input — opens rear camera directly on mobile */}
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+
+              {/* Gallery / file picker input */}
               <input
                 ref={fileInputRef}
                 type="file"
