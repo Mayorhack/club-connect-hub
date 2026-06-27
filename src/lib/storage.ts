@@ -167,6 +167,7 @@ export interface Memory {
   imageUrl: string;
   caption?: string;
   uploaderName?: string;
+  uploaderBrowserId?: string;
   createdAt: string;
 }
 
@@ -266,6 +267,7 @@ interface MemoryRow {
   image_url: string;
   caption: string | null;
   uploader_name: string | null;
+  uploader_browser_id: string | null;
   created_at: string;
 }
 
@@ -394,6 +396,7 @@ function rowToMemory(r: MemoryRow): Memory {
     imageUrl: r.image_url,
     caption: r.caption ?? undefined,
     uploaderName: r.uploader_name ?? undefined,
+    uploaderBrowserId: r.uploader_browser_id ?? undefined,
     createdAt: r.created_at,
   };
 }
@@ -759,7 +762,7 @@ export async function getMemories(): Promise<Memory[]> {
 }
 
 export async function createMemory(
-  memory: Pick<Memory, "imageUrl" | "caption" | "uploaderName">,
+  memory: Pick<Memory, "imageUrl" | "caption" | "uploaderName" | "uploaderBrowserId">,
 ): Promise<Memory> {
   const { data, error } = await supabase
     .from("memories")
@@ -767,6 +770,7 @@ export async function createMemory(
       image_url: memory.imageUrl,
       caption: memory.caption ?? null,
       uploader_name: memory.uploaderName ?? null,
+      uploader_browser_id: memory.uploaderBrowserId ?? null,
     })
     .select()
     .single();
@@ -777,6 +781,18 @@ export async function createMemory(
 export async function deleteMemory(id: string): Promise<void> {
   const { error } = await supabase.from("memories").delete().eq("id", id);
   if (error) throw error;
+}
+
+export async function deleteMemoryByBrowserId(
+  id: string,
+  browserId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc("delete_memory_by_browser_id", {
+    memory_id: id,
+    browser_id: browserId,
+  });
+  if (error) throw error;
+  return data as boolean;
 }
 
 // ── Profile mutations ─────────────────────────────────────────────────────────

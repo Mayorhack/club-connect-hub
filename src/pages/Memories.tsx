@@ -8,7 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { uploadMemoryToCloudinary } from "@/lib/cloudinary";
-import { createMemory, deleteMemory, getMemories } from "@/lib/storage";
+import { createMemory, deleteMemory, deleteMemoryByBrowserId, getMemories } from "@/lib/storage";
+
+function getBrowserId(): string {
+  const key = "pie_cup_browser_id";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
 import { useAuth } from "@/lib/auth";
 
 function timeAgo(iso: string): string {
@@ -30,6 +40,7 @@ export default function Memories() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const uploadRef = useRef<HTMLElement>(null);
+  const browserId = getBrowserId();
 
   const { data: memories = [], isLoading } = useQuery({
     queryKey: ["memories"],
@@ -97,6 +108,7 @@ export default function Memories() {
         imageUrl,
         caption: caption.trim() || undefined,
         uploaderName: uploaderName.trim() || undefined,
+        uploaderBrowserId: browserId,
       });
       toast.success("Memory shared!");
       clearSelection();
@@ -113,7 +125,12 @@ export default function Memories() {
   async function handleDelete(id: string) {
     if (!confirm("Remove this memory?")) return;
     try {
-      await deleteMemory(id);
+      if (user?.role === "super") {
+        await deleteMemory(id);
+      } else {
+        const deleted = await deleteMemoryByBrowserId(id, browserId);
+        if (!deleted) throw new Error("Could not remove this memory.");
+      }
       toast.success("Memory removed.");
       await qc.invalidateQueries({ queryKey: ["memories"] });
     } catch (err) {
@@ -399,7 +416,7 @@ export default function Memories() {
                       {timeAgo(memory.createdAt)}
                     </div>
 
-                    {user?.role === "super" && (
+                    {(user?.role === "super" || memory.uploaderBrowserId === browserId) && (
                       <button
                         type="button"
                         onClick={() => void handleDelete(memory.id)}
