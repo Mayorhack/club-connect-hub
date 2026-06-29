@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/Layout";
@@ -815,6 +815,302 @@ function MatchDayModal({
   );
 }
 
+// ── Champion Celebration Modal ────────────────────────────────────────────────
+
+const CONFETTI_PIECES = Array.from({ length: 65 }, (_, i) => ({
+  id: i,
+  left: `${((i * 1.538) % 100).toFixed(1)}%`,
+  delay: `${((i * 0.19) % 3).toFixed(2)}s`,
+  duration: `${2.3 + (i % 9) * 0.18}s`,
+  color: [
+    "#FFD700", "#FF6B6B", "#4CAF50", "#2196F3",
+    "#FF9800", "#E91E63", "#9C27B0", "#00BCD4", "#F44336",
+  ][i % 9],
+  size: `${6 + (i % 5) * 2}px`,
+  round: i % 3 !== 0,
+}));
+
+const CHAMPION_KEYFRAMES = `
+  @keyframes conf-fall {
+    0%   { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(420px) rotate(720deg); opacity: 0; }
+  }
+  @keyframes champ-trophy {
+    0%, 100% { transform: translateY(0) rotate(-3deg); }
+    50%       { transform: translateY(-6px) rotate(3deg); }
+  }
+  @keyframes champ-shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+  @keyframes champ-pulse {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50%       { opacity: 1; transform: scale(1.06); }
+  }
+  @keyframes champ-ring {
+    0%   { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(1.45); opacity: 0; }
+  }
+  @keyframes champ-rise {
+    0%   { opacity: 0; transform: translateY(14px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .champ-trophy  { display: inline-block; animation: champ-trophy 2.4s ease-in-out infinite; }
+  .champ-shimmer {
+    background: linear-gradient(100deg, #C8962B 0%, #FBE58C 22%, #FFFDF0 38%, #FBE58C 54%, #E0A93C 78%, #C8962B 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: champ-shimmer 3.2s linear infinite;
+  }
+  .champ-logo-pulse { animation: champ-pulse 2.6s ease-in-out infinite; }
+  .champ-rise { animation: champ-rise 0.7s cubic-bezier(0.22,1,0.36,1) both; }
+`;
+
+function ChampionBanner({
+  winner,
+  homeTeam,
+  awayTeam,
+  homeScore,
+  awayScore,
+}: Readonly<{
+  winner: Club;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number;
+  awayScore: number;
+}>) {
+  return (
+    <section className="relative overflow-hidden border-y border-amber-400/15 bg-[#0a0e1a]">
+      <style>{CHAMPION_KEYFRAMES}</style>
+
+      {/* Ambient gold glow */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 80% at 50% 0%, rgba(251,191,36,0.10) 0%, transparent 60%)",
+        }}
+      />
+      {/* Fine grid sheen */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.04]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)",
+          backgroundSize: "44px 44px",
+        }}
+      />
+
+      {/* Confetti layer */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {CONFETTI_PIECES.map((c) => (
+          <div
+            key={`banner-conf-${c.id}`}
+            style={{
+              position: "absolute",
+              left: c.left,
+              top: "-12px",
+              width: c.size,
+              height: c.size,
+              backgroundColor: c.color,
+              borderRadius: c.round ? "50%" : "2px",
+              willChange: "transform, opacity",
+              animation: `conf-fall ${c.duration} ${c.delay} linear infinite`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="relative container py-12 sm:py-16">
+        {/* Eyebrow */}
+        <div className="champ-rise flex items-center justify-center gap-3 mb-7">
+          <span className="h-px w-8 sm:w-14 bg-gradient-to-r from-transparent to-amber-400/50" />
+          <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.4em] text-amber-300/80">
+            Champions 2026
+          </span>
+          <span className="h-px w-8 sm:w-14 bg-gradient-to-l from-transparent to-amber-400/50" />
+        </div>
+
+        <div className="flex flex-col items-center text-center gap-6 sm:flex-row sm:text-left sm:justify-center sm:gap-12">
+          {/* Trophy + Logo cluster */}
+          <div className="champ-rise flex items-center gap-5 sm:gap-7" style={{ animationDelay: "0.08s" }}>
+            <div className="text-6xl sm:text-7xl leading-none drop-shadow-[0_4px_18px_rgba(251,191,36,0.35)] champ-trophy">
+              🏆
+            </div>
+
+            <div className="relative shrink-0">
+              <span className="absolute inset-0 rounded-full border border-amber-300/60" style={{ animation: "champ-ring 2.4s ease-out infinite" }} />
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-white/5 ring-2 ring-amber-300/80 shadow-[0_0_45px_rgba(251,191,36,0.3)] champ-logo-pulse flex items-center justify-center">
+                {winner.logoUrl ? (
+                  <img src={winner.logoUrl} alt={winner.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-4xl">🏅</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Text */}
+          <div className="champ-rise" style={{ animationDelay: "0.16s" }}>
+            <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-[0.12em] leading-none champ-shimmer">
+              Champions
+            </h2>
+            <p className="mt-2.5 text-xl sm:text-3xl font-extrabold text-white tracking-tight">
+              {winner.name}
+            </p>
+
+            {/* Score chip */}
+            <div className="mt-4 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 backdrop-blur-sm">
+              <span className="text-xs sm:text-sm font-medium text-white/80 truncate max-w-[90px] sm:max-w-none">
+                {homeTeam}
+              </span>
+              <span className="text-sm sm:text-base font-black text-amber-300 tabular-nums">
+                {homeScore}–{awayScore}
+              </span>
+              <span className="text-xs sm:text-sm font-medium text-white/80 truncate max-w-[90px] sm:max-w-none">
+                {awayTeam}
+              </span>
+            </div>
+
+            <p className="mt-3 text-[11px] uppercase tracking-[0.25em] text-white/35">
+              Final · PIE Football Cup
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom gold hairline */}
+      <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
+    </section>
+  );
+}
+
+function ChampionModal({
+  open,
+  onOpenChange,
+  winner,
+  homeTeam,
+  awayTeam,
+  homeScore,
+  awayScore,
+}: Readonly<{
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  winner: Club;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number;
+  awayScore: number;
+}>) {
+  return (
+    <>
+      {/* Styles outside the portal so they don't flicker on open/close */}
+      <style>{CHAMPION_KEYFRAMES}</style>
+
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-sm w-[calc(100%-2rem)] max-h-[92dvh] overflow-y-auto overflow-x-hidden p-0 border-0 bg-transparent shadow-none">
+          <div className="relative overflow-hidden rounded-2xl border border-amber-300/25 bg-gradient-to-b from-[#0b1020] via-[#0a0e1a] to-[#070a13] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)]">
+            {/* Ambient glow */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(251,191,36,0.16) 0%, transparent 65%)",
+              }}
+            />
+
+            {/* Confetti */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              {CONFETTI_PIECES.map((c) => (
+                <div
+                  key={`modal-conf-${c.id}`}
+                  style={{
+                    position: "absolute",
+                    left: c.left,
+                    top: "-14px",
+                    width: c.size,
+                    height: c.size,
+                    backgroundColor: c.color,
+                    borderRadius: c.round ? "50%" : "2px",
+                    willChange: "transform, opacity",
+                    animation: `conf-fall ${c.duration} ${c.delay} linear infinite`,
+                  }}
+                />
+              ))}
+            </div>
+
+            <DialogHeader className="sr-only">
+              <DialogTitle>{winner.name} are PIE Cup Champions</DialogTitle>
+            </DialogHeader>
+
+            <div className="relative px-6 pt-9 pb-7 text-center">
+              {/* Eyebrow */}
+              <div className="champ-rise flex items-center justify-center gap-2.5 mb-5">
+                <span className="h-px w-8 bg-gradient-to-r from-transparent to-amber-400/50" />
+                <span className="text-[10px] font-semibold uppercase tracking-[0.35em] text-amber-300/80">
+                  Champions 2026
+                </span>
+                <span className="h-px w-8 bg-gradient-to-l from-transparent to-amber-400/50" />
+              </div>
+
+              {/* Trophy */}
+              <div className="champ-rise text-7xl leading-none drop-shadow-[0_6px_22px_rgba(251,191,36,0.4)] champ-trophy" style={{ animationDelay: "0.05s" }}>
+                🏆
+              </div>
+
+              {/* Heading */}
+              <h2 className="champ-rise mt-3 text-4xl font-black uppercase tracking-[0.12em] champ-shimmer" style={{ animationDelay: "0.1s" }}>
+                Champions
+              </h2>
+
+              {/* Logo */}
+              <div className="champ-rise relative mx-auto mt-6 w-28 h-28" style={{ animationDelay: "0.16s" }}>
+                <span className="absolute inset-0 rounded-full border border-amber-300/60" style={{ animation: "champ-ring 2.4s ease-out infinite" }} />
+                <div className="relative w-full h-full rounded-full overflow-hidden bg-white/5 ring-2 ring-amber-300/80 shadow-[0_0_45px_rgba(251,191,36,0.3)] champ-logo-pulse flex items-center justify-center">
+                  {winner.logoUrl ? (
+                    <img src={winner.logoUrl} alt={winner.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-5xl">🏅</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Club name */}
+              <p className="champ-rise mt-5 text-2xl font-extrabold text-white tracking-tight" style={{ animationDelay: "0.22s" }}>
+                {winner.name}
+              </p>
+
+              {/* Score chip */}
+              <div className="champ-rise mt-4 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 backdrop-blur-sm" style={{ animationDelay: "0.28s" }}>
+                <span className="text-xs font-medium text-white/80 truncate max-w-[80px]">{homeTeam}</span>
+                <span className="text-base font-black text-amber-300 tabular-nums">
+                  {homeScore}–{awayScore}
+                </span>
+                <span className="text-xs font-medium text-white/80 truncate max-w-[80px]">{awayTeam}</span>
+              </div>
+
+              <p className="champ-rise mt-3 text-[10px] uppercase tracking-[0.28em] text-white/35" style={{ animationDelay: "0.34s" }}>
+                Final · PIE Football Cup
+              </p>
+
+              {/* CTA */}
+              <button
+                onClick={() => onOpenChange(false)}
+                className="champ-rise mt-7 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-9 py-2.5 text-sm font-bold text-[#1a1200] tracking-wide shadow-[0_8px_24px_-6px_rgba(251,191,36,0.6)] transition-all hover:from-amber-200 hover:to-amber-400 hover:scale-[1.03] active:scale-95"
+                style={{ animationDelay: "0.4s" }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 // ── Generic slider shell ──────────────────────────────────────────────────────
 function Slider<T>({
   items,
@@ -901,6 +1197,7 @@ function Slider<T>({
 // ── Page ──────────────────────────────────────────────────────────────────────
 const Index = () => {
   const [isMatchDayModalOpen, setIsMatchDayModalOpen] = useState(false);
+  const [isChampionModalOpen, setIsChampionModalOpen] = useState(false);
 
   const { data: clubs = [] } = useQuery({
     queryKey: ["clubs"],
@@ -919,6 +1216,28 @@ const Index = () => {
   const clubMap = Object.fromEntries(clubs.map((c) => [c.id, c]));
   const featuresContainerRef = useRevealContainer();
 
+  const finalFixture = useMemo(
+    () =>
+      fixtures.find(
+        (f) =>
+          f.stage === "final" &&
+          f.homeScore !== undefined &&
+          f.awayScore !== undefined,
+      ) ?? null,
+    [fixtures],
+  );
+
+  const champion = useMemo<Club | null>(() => {
+    if (!finalFixture) return null;
+    if (finalFixture.homeScore! > finalFixture.awayScore!) {
+      return clubs.find((c) => c.id === finalFixture.homeClubId) ?? null;
+    }
+    if (finalFixture.awayScore! > finalFixture.homeScore!) {
+      return clubs.find((c) => c.id === finalFixture.awayClubId) ?? null;
+    }
+    return null;
+  }, [finalFixture, clubs]);
+
   useEffect(() => {
     const storageKey = "matchday-1-modal-last-seen";
     const today = new Date().toISOString().slice(0, 10);
@@ -934,6 +1253,21 @@ const Index = () => {
       setIsMatchDayModalOpen(false);
     }
   }, []);
+
+  // Show the champion celebration once per final result.
+  useEffect(() => {
+    if (!champion || !finalFixture) return;
+    const key = `champion-modal-seen-${finalFixture.id}`;
+    try {
+      if (!localStorage.getItem(key)) {
+        setIsChampionModalOpen(true);
+        localStorage.setItem(key, "1");
+      }
+    } catch {
+      setIsChampionModalOpen(true);
+    }
+  }, [champion, finalFixture]);
+
 
   const spotlightPlayers = topScorers;
 
@@ -984,6 +1318,28 @@ const Index = () => {
       <section className="relative overflow-hidden border-b border-border bg-black">
         <HeroCarousel slides={HERO_SLIDES} clubsCount={7} totalPlayers={175} />
       </section>
+
+      {/* ── Champion celebration (only when final is played) ── */}
+      {champion && finalFixture && (
+        <>
+          <ChampionModal
+            open={isChampionModalOpen}
+            onOpenChange={setIsChampionModalOpen}
+            winner={champion}
+            homeTeam={clubMap[finalFixture.homeClubId]?.name ?? ""}
+            awayTeam={clubMap[finalFixture.awayClubId]?.name ?? ""}
+            homeScore={finalFixture.homeScore!}
+            awayScore={finalFixture.awayScore!}
+          />
+          <ChampionBanner
+            winner={champion}
+            homeTeam={clubMap[finalFixture.homeClubId]?.name ?? ""}
+            awayTeam={clubMap[finalFixture.awayClubId]?.name ?? ""}
+            homeScore={finalFixture.homeScore!}
+            awayScore={finalFixture.awayScore!}
+          />
+        </>
+      )}
 
       {/* ── Features row ── */}
       <section className="border-b border-border bg-muted/40">

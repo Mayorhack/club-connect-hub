@@ -148,6 +148,8 @@ export interface MatchFixture {
   awayClubId: string;
   homeScore?: number;
   awayScore?: number;
+  homePenaltyScore?: number | null;
+  awayPenaltyScore?: number | null;
   venue?: string;
   venueMapsUrl?: string;
   venueDirections?: string;
@@ -248,6 +250,8 @@ interface MatchFixtureRow {
   away_club_id: string;
   home_score: number | null;
   away_score: number | null;
+  home_penalty_score: number | null;
+  away_penalty_score: number | null;
   venue: string | null;
   venue_maps_url: string | null;
   venue_directions: string | null;
@@ -373,6 +377,8 @@ function rowToFixture(r: MatchFixtureRow): MatchFixture {
     awayClubId: r.away_club_id,
     homeScore: r.home_score ?? undefined,
     awayScore: r.away_score ?? undefined,
+    homePenaltyScore: r.home_penalty_score,
+    awayPenaltyScore: r.away_penalty_score,
     venue: r.venue ?? undefined,
     venueMapsUrl: r.venue_maps_url ?? undefined,
     venueDirections: r.venue_directions ?? undefined,
@@ -691,6 +697,8 @@ export async function updateFixture(
   if (updates.awayClubId !== undefined) row.away_club_id = updates.awayClubId;
   if (updates.homeScore !== undefined) row.home_score = updates.homeScore;
   if (updates.awayScore !== undefined) row.away_score = updates.awayScore;
+  if ("homePenaltyScore" in updates) row.home_penalty_score = updates.homePenaltyScore ?? null;
+  if ("awayPenaltyScore" in updates) row.away_penalty_score = updates.awayPenaltyScore ?? null;
   if (updates.venue !== undefined) row.venue = updates.venue ?? null;
   if (updates.venueMapsUrl !== undefined)
     row.venue_maps_url = updates.venueMapsUrl ?? null;

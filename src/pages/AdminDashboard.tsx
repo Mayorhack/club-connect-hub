@@ -94,7 +94,7 @@ export default function AdminDashboard() {
   const [fixtureVenue, setFixtureVenue] = useState("");
   const [fixtureVenueMapsUrl, setFixtureVenueMapsUrl] = useState("");
   const [fixtureVenueDirections, setFixtureVenueDirections] = useState("");
-  const [fixtureStage, setFixtureStage] = useState<"group" | "semi-final" | "final">("group");
+  const [fixtureStage, setFixtureStage] = useState<"group" | "semi-final" | "third-place" | "final">("group");
 
   function handleLogoUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -309,6 +309,8 @@ export default function AdminDashboard() {
     fixtureId: string,
     homeScoreRaw: string,
     awayScoreRaw: string,
+    homePenaltyRaw?: string,
+    awayPenaltyRaw?: string,
   ) {
     const homeScore = Number(homeScoreRaw);
     const awayScore = Number(awayScoreRaw);
@@ -322,8 +324,25 @@ export default function AdminDashboard() {
       return;
     }
 
+    const isDraw = homeScore === awayScore;
+    const updates: Parameters<typeof updateFixture>[1] = { homeScore, awayScore };
+
+    if (homePenaltyRaw !== undefined && awayPenaltyRaw !== undefined) {
+      if (isDraw && homePenaltyRaw !== "" && awayPenaltyRaw !== "") {
+        const hp = Number(homePenaltyRaw);
+        const ap = Number(awayPenaltyRaw);
+        if (!Number.isNaN(hp) && !Number.isNaN(ap) && hp >= 0 && ap >= 0) {
+          updates.homePenaltyScore = hp;
+          updates.awayPenaltyScore = ap;
+        }
+      } else {
+        updates.homePenaltyScore = null;
+        updates.awayPenaltyScore = null;
+      }
+    }
+
     try {
-      await updateFixture(fixtureId, { homeScore, awayScore });
+      await updateFixture(fixtureId, updates);
       toast.success("Result updated");
       await invalidateDashboard();
     } catch (error) {
@@ -747,7 +766,7 @@ export default function AdminDashboard() {
                     <Select
                       value={fixtureStage}
                       onValueChange={(v) =>
-                        setFixtureStage(v as "group" | "semi-final" | "final")
+                        setFixtureStage(v as "group" | "semi-final" | "third-place" | "final")
                       }
                     >
                       <SelectTrigger>
@@ -756,6 +775,7 @@ export default function AdminDashboard() {
                       <SelectContent>
                         <SelectItem value="group">Group Stage</SelectItem>
                         <SelectItem value="semi-final">Semi-Final</SelectItem>
+                        <SelectItem value="third-place">Third Place</SelectItem>
                         <SelectItem value="final">Final</SelectItem>
                       </SelectContent>
                     </Select>
@@ -907,14 +927,17 @@ export default function AdminDashboard() {
                                 </div>
 
                                 <form
-                                  className="flex items-center gap-2"
+                                  className="flex flex-wrap items-center gap-2"
                                   onSubmit={(e) => {
                                     e.preventDefault();
                                     const fd = new FormData(e.currentTarget);
+                                    const isSemiFinal = fixture.stage === "semi-final" || fixture.stage === "third-place";
                                     void handleSaveFixtureResult(
                                       fixture.id,
                                       readFormString(fd, "homeScore"),
                                       readFormString(fd, "awayScore"),
+                                      isSemiFinal ? readFormString(fd, "homePenalty") : undefined,
+                                      isSemiFinal ? readFormString(fd, "awayPenalty") : undefined,
                                     );
                                   }}
                                 >
@@ -935,6 +958,32 @@ export default function AdminDashboard() {
                                     className="w-16"
                                     defaultValue={fixture.awayScore ?? 0}
                                   />
+                                  {(fixture.stage === "semi-final" || fixture.stage === "third-place") && (
+                                    <>
+                                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                        Pens:
+                                      </span>
+                                      <Input
+                                        name="homePenalty"
+                                        type="number"
+                                        min={0}
+                                        className="w-14"
+                                        defaultValue={fixture.homePenaltyScore ?? ""}
+                                        placeholder="—"
+                                      />
+                                      <span className="text-sm text-muted-foreground">
+                                        -
+                                      </span>
+                                      <Input
+                                        name="awayPenalty"
+                                        type="number"
+                                        min={0}
+                                        className="w-14"
+                                        defaultValue={fixture.awayPenaltyScore ?? ""}
+                                        placeholder="—"
+                                      />
+                                    </>
+                                  )}
                                   <Button
                                     type="submit"
                                     size="sm"

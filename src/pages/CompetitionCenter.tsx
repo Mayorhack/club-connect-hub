@@ -63,6 +63,11 @@ export default function CompetitionCenter() {
     [fixtures],
   );
 
+  const thirdPlaceFixtures = useMemo(
+    () => fixtures.filter((f) => f.stage === "third-place"),
+    [fixtures],
+  );
+
   const groupedFixtures = useMemo(() => {
     const byDay = new Map<number, typeof fixtures>();
     fixtures.forEach((fixture) => {
@@ -71,7 +76,7 @@ export default function CompetitionCenter() {
     });
 
     return Array.from(byDay.entries())
-      .sort((a, b) => a[0] - b[0])
+      .sort((a, b) => b[0] - a[0])
       .map(([matchday, list]) => ({
         matchday,
         fixtures: [...list].sort((a, b) =>
@@ -238,86 +243,79 @@ export default function CompetitionCenter() {
 
         <aside className="space-y-6">
           <section className="rounded-xl border border-border bg-card p-4">
-            <h2 className="font-bold mb-3">Knockout Stage</h2>
+            <header className="flex items-center gap-2 mb-4">
+              <Trophy className="h-5 w-5 text-primary" />
+              <h2 className="font-bold">Knockout Stage</h2>
+            </header>
 
             {readyForSemiFinals ? (
-              <div className="space-y-4">
-                {semiFinalFixtures.length > 0 ? (
-                  semiFinalFixtures.map((fixture, idx) => {
-                    const home =
-                      clubMap.get(fixture.homeClubId)?.name ?? "TBD";
-                    const away =
-                      clubMap.get(fixture.awayClubId)?.name ?? "TBD";
-                    const hasScore =
-                      fixture.homeScore !== undefined &&
-                      fixture.awayScore !== undefined;
-                    return (
-                      <div key={fixture.id}>
-                        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                          Semi-Final {idx + 1}
-                        </p>
-                        <div className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3 text-sm">
-                          <span className="font-medium truncate">{home}</span>
-                          {hasScore ? (
-                            <span className="rounded-md bg-muted px-2 py-0.5 font-semibold">
-                              {fixture.homeScore} - {fixture.awayScore}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">vs</span>
-                          )}
-                          <span className="font-medium truncate text-right">
-                            {away}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <>
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                        Semi-Final 1
-                      </p>
-                      <div className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3 text-sm">
-                        <span className="font-medium truncate">
-                          {semiFinalOne[0]}
-                        </span>
-                        <span className="text-muted-foreground">vs</span>
-                        <span className="font-medium truncate text-right">
-                          {semiFinalOne[1]}
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                        Semi-Final 2
-                      </p>
-                      <div className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3 text-sm">
-                        <span className="font-medium truncate">
-                          {semiFinalTwo[0]}
-                        </span>
-                        <span className="text-muted-foreground">vs</span>
-                        <span className="font-medium truncate text-right">
-                          {semiFinalTwo[1]}
-                        </span>
-                      </div>
-                    </div>
-                  </>
-                )}
+              <div className="space-y-5">
 
+                {/* ── Final ── */}
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                    Final
-                  </p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-amber-500">
+                      🏆 Final
+                    </span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+
                   {finalFixtures.length > 0 ? (
                     finalFixtures.map((fixture) => {
-                      const home =
-                        clubMap.get(fixture.homeClubId)?.name ?? "TBD";
-                      const away =
-                        clubMap.get(fixture.awayClubId)?.name ?? "TBD";
+                      const home = clubMap.get(fixture.homeClubId)?.name ?? "TBD";
+                      const away = clubMap.get(fixture.awayClubId)?.name ?? "TBD";
                       const hasScore =
                         fixture.homeScore !== undefined &&
                         fixture.awayScore !== undefined;
+                      return (
+                        <div
+                          key={fixture.id}
+                          className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-3 flex items-center justify-between gap-3"
+                        >
+                          <span className="font-semibold text-sm truncate">{home}</span>
+                          {hasScore ? (
+                            <span className="shrink-0 rounded-md bg-amber-500/15 border border-amber-500/25 px-2.5 py-0.5 font-black text-amber-600 dark:text-amber-400 tabular-nums">
+                              {fixture.homeScore} – {fixture.awayScore}
+                            </span>
+                          ) : (
+                            <span className="shrink-0 text-xs text-muted-foreground font-medium">vs</span>
+                          )}
+                          <span className="font-semibold text-sm truncate text-right">{away}</span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-border bg-background px-3 py-3 flex items-center justify-between gap-3 text-sm text-muted-foreground">
+                      <span className="truncate">Winner SF 1</span>
+                      <span className="shrink-0 text-xs">vs</span>
+                      <span className="truncate text-right">Winner SF 2</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Third Place ── */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                      🥉 Third Place
+                    </span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+
+                  {thirdPlaceFixtures.length > 0 ? (
+                    thirdPlaceFixtures.map((fixture) => {
+                      const home = clubMap.get(fixture.homeClubId)?.name ?? "TBD";
+                      const away = clubMap.get(fixture.awayClubId)?.name ?? "TBD";
+                      const hasScore =
+                        fixture.homeScore !== undefined &&
+                        fixture.awayScore !== undefined;
+                      const isDraw = hasScore && fixture.homeScore === fixture.awayScore;
+                      const hasPenalties =
+                        isDraw &&
+                        fixture.homePenaltyScore != null &&
+                        fixture.awayPenaltyScore != null;
                       return (
                         <div
                           key={fixture.id}
@@ -325,48 +323,100 @@ export default function CompetitionCenter() {
                         >
                           <span className="font-medium truncate">{home}</span>
                           {hasScore ? (
-                            <span className="rounded-md bg-muted px-2 py-0.5 font-semibold">
-                              {fixture.homeScore} - {fixture.awayScore}
+                            <span className="shrink-0 rounded-md bg-muted px-2 py-0.5 font-semibold text-center whitespace-nowrap">
+                              {fixture.homeScore} – {fixture.awayScore}
+                              {hasPenalties && (
+                                <span className="block text-[10px] font-normal text-muted-foreground leading-tight">
+                                  ({fixture.homePenaltyScore}–{fixture.awayPenaltyScore} pens)
+                                </span>
+                              )}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground">vs</span>
+                            <span className="shrink-0 text-xs text-muted-foreground">vs</span>
                           )}
-                          <span className="font-medium truncate text-right">
-                            {away}
-                          </span>
+                          <span className="font-medium truncate text-right">{away}</span>
                         </div>
                       );
                     })
                   ) : (
-                    <div className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3 text-sm">
-                      <span className="font-medium truncate">Winner SF1</span>
-                      <span className="text-muted-foreground">vs</span>
-                      <span className="font-medium truncate text-right">
-                        Winner SF2
-                      </span>
+                    <div className="rounded-lg border border-dashed border-border bg-background px-3 py-2 flex items-center justify-between gap-3 text-sm text-muted-foreground">
+                      <span className="truncate">Loser SF 1</span>
+                      <span className="shrink-0 text-xs">vs</span>
+                      <span className="truncate text-right">Loser SF 2</span>
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Qualified Teams
-                  </p>
+                {/* ── Semi-Finals ── */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Semi-Finals
+                    </span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+
+                  <div className="space-y-2">
+                    {semiFinalFixtures.length > 0 ? (
+                      semiFinalFixtures.map((fixture, idx) => {
+                        const home = clubMap.get(fixture.homeClubId)?.name ?? "TBD";
+                        const away = clubMap.get(fixture.awayClubId)?.name ?? "TBD";
+                        const hasScore =
+                          fixture.homeScore !== undefined &&
+                          fixture.awayScore !== undefined;
+                        const isDraw = hasScore && fixture.homeScore === fixture.awayScore;
+                        const hasPenalties =
+                          isDraw &&
+                          fixture.homePenaltyScore != null &&
+                          fixture.awayPenaltyScore != null;
+                        return (
+                          <div key={fixture.id}>
+                            <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1 ml-0.5">
+                              SF {idx + 1}
+                            </p>
+                            <div className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3 text-sm">
+                              <span className="font-medium truncate">{home}</span>
+                              {hasScore ? (
+                                <span className="shrink-0 rounded-md bg-muted px-2 py-0.5 font-semibold text-center whitespace-nowrap">
+                                  {fixture.homeScore} – {fixture.awayScore}
+                                  {hasPenalties && (
+                                    <span className="block text-[10px] font-normal text-muted-foreground leading-tight">
+                                      ({fixture.homePenaltyScore}–{fixture.awayPenaltyScore} pens)
+                                    </span>
+                                  )}
+                                </span>
+                              ) : (
+                                <span className="shrink-0 text-xs text-muted-foreground">vs</span>
+                              )}
+                              <span className="font-medium truncate text-right">{away}</span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <>
+                        {[
+                          [semiFinalOne[0], semiFinalOne[1]],
+                          [semiFinalTwo[0], semiFinalTwo[1]],
+                        ].map(([a, b], idx) => (
+                          <div key={idx}>
+                            <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1 ml-0.5">
+                              SF {idx + 1}
+                            </p>
+                            <div className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3 text-sm">
+                              <span className="font-medium truncate">{a}</span>
+                              <span className="shrink-0 text-xs text-muted-foreground">vs</span>
+                              <span className="font-medium truncate text-right">{b}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
                 </div>
 
-                {semiFinalists.map((row, idx) => (
-                  <div
-                    key={row.clubId}
-                    className="rounded-lg border border-border bg-background px-3 py-2 flex items-center justify-between gap-3"
-                  >
-                    <p className="text-sm font-medium truncate">
-                      {idx + 1}. {clubMap.get(row.clubId)?.name ?? "Unknown"}
-                    </p>
-                    <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold">
-                      {row.points} pts
-                    </span>
-                  </div>
-                ))}
+
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
